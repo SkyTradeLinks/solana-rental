@@ -1,79 +1,71 @@
 use anchor_lang::prelude::*;
 
-use chrono::{DateTime, FixedOffset};
+pub mod errors;
+pub mod instructions;
+pub mod state;
 
-declare_id!("4KMuY3t3GfGHCzp94yC3QYV2bmzqKYNSdQjS8SxxJ7Zp");
+pub use errors::*;
+pub use instructions::*;
+use mpl_bubblegum::types::{MetadataArgs, TokenProgramVersion, TokenStandard};
+pub use state::*;
+
+declare_id!("J1CDakgKrBBzM91z3Q2qpJjanFnqJAtTuPND2fbVzfx4");
 
 #[program]
 pub mod solana_sky_trade {
     use super::*;
 
-    pub fn initialize(ctx: Context<Initialize>, land_ids: String) -> Result<()> {
-        // let bump_seed = [ctx.bumps.central_authority];
-        // let signer_seeds: &[&[&[u8]]] = &[&["central_authority".as_bytes(), &bump_seed.as_ref()]];
+    pub fn initialize(ctx: Context<InitializePayload>) -> Result<()> {
+        handle_initialize(ctx)
+    }
 
-        // emit!();
+    pub fn mint_rental_token<'info>(
+        ctx: Context<'_, '_, '_, 'info, MintRentalTokenPayload<'info>>,
+        metadata_args: Vec<u8>,
+        leaves_data: Vec<LeafData>,
+    ) -> Result<()> {
+        handle_mint_rental_token(ctx, metadata_args, leaves_data)
+    }
 
-        // ctx.accounts.central_authority.
+    pub fn transfer_rental_token<'info>(
+        ctx: Context<'_, '_, '_, 'info, TransferRentalTokenPayload<'info>>,
+        leaf_data: LeafData,
+    ) -> Result<()> {
+        handle_transfer_rental_token(ctx, leaf_data)
+    }
 
-        // ctx.accounts
-
-        // ctx.accounts.central_authority
-
-        // note_pda_account
-
-        Ok(())
+    pub fn update_config(
+        ctx: Context<UpdateConfigPayload>,
+        base_cost: Option<u64>,
+        admin_quota: Option<f64>,
+    ) -> Result<()> {
+        handle_update_config(ctx, base_cost, admin_quota)
     }
 }
 
-#[derive(Accounts)]
-#[instruction(land_ids: String)]
-pub struct Initialize<'info> {
-    // #[account(
-    //     init_if_needed,
-    //     payer = payer,
-    //     space = 8 + CentralStateData::MAX_SIZE,
-    //     seeds = [b"central_authority"],
-    //     bump
-    //     )]
-    // pub central_authority: Account<'info, CentralStateData>,
-    #[
-        account(
-            init_if_needed,
-            payer = payer,
-            space = 8 + Data::MAX_SIZE,
-            seeds = [b"test_seed"],
-            bump
-        )
-    ]
-    pub pda: Account<'info, Data>,
-
-    #[account(mut, signer)]
-    pub payer: Signer<'info>,
-
-    pub system_program: Program<'info, System>,
+#[derive(Debug, Clone, AnchorDeserialize, AnchorSerialize)]
+pub struct LeafData {
+    pub leaf_index: u32,
+    pub leaf_nonce: u64,
+    pub owner: Pubkey,
+    pub delegate: Pubkey,
+    pub root: Pubkey,
+    pub leaf_hash: Option<[u8; 32]>,
 }
 
-#[account]
-pub struct CentralStateData {
-    pub initialized: bool,           // 1
-    pub centralized_account: Pubkey, //32
-    pub base_cost: u64,              // 8
-    pub admin_quota: f64,            // 8
-}
-
-impl CentralStateData {
-    pub const MAX_SIZE: usize = (1 + 32 + 8 + 8) * 3;
-}
-
-#[account]
-pub struct Data {
-    // pub asset_id: Vec<Pubkey>, // 32 * 10
-    // pub start_time: DateTime<FixedOffset>,
-    // pub end_time: DateTime<FixedOffset>,
-    pub is_initialized: bool,
-}
-
-impl Data {
-    pub const MAX_SIZE: usize = 2;
+pub fn get_rental_token_metadata() -> MetadataArgs {
+    MetadataArgs {
+        name: String::from("Test NFT"),
+        symbol: String::from("T-NFT"),
+        uri: String::from("Test URL"),
+        creators: vec![],
+        seller_fee_basis_points: 0,
+        primary_sale_happened: false,
+        is_mutable: false,
+        edition_nonce: None,
+        uses: None,
+        collection: None,
+        token_program_version: TokenProgramVersion::Original,
+        token_standard: Some(TokenStandard::NonFungible),
+    }
 }
