@@ -9,7 +9,7 @@ pub use instructions::*;
 use mpl_bubblegum::types::{MetadataArgs, TokenProgramVersion, TokenStandard};
 pub use state::*;
 
-declare_id!("J1CDakgKrBBzM91z3Q2qpJjanFnqJAtTuPND2fbVzfx4");
+declare_id!("ECx9bStpVGwfJAqotLg4zaEVeQRMH3L1r3E1DNtyvqAi");
 
 #[program]
 pub mod solana_sky_trade {
@@ -36,10 +36,17 @@ pub mod solana_sky_trade {
 
     pub fn update_config(
         ctx: Context<UpdateConfigPayload>,
-        base_cost: Option<u64>,
-        admin_quota: Option<f64>,
+        payload: UpdateConfigData,
     ) -> Result<()> {
-        handle_update_config(ctx, base_cost, admin_quota)
+        handle_update_config(ctx, payload)
+    }
+
+    pub fn increase_data_space(
+        ctx: Context<IncreaseDataSpacePayload>,
+        len: u16,
+        existing_data: Data,
+    ) -> Result<()> {
+        handle_increase_data_space(ctx, len, existing_data)
     }
 }
 

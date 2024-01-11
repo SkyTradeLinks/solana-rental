@@ -24,8 +24,8 @@ pub struct TransferRentalTokenPayload<'info> {
     #[account(mut)]
     pub sender: Signer<'info>,
 
-    #[account(mut, signer)]
-    pub rental_merkle_tree: Signer<'info>,
+    /// CHECK: This account is checked in the instruction
+    pub rental_merkle_tree: AccountInfo<'info>,
 
     /// CHECK: This account is checked in the instruction
     pub receiver: AccountInfo<'info>,
@@ -52,6 +52,10 @@ pub fn handle_transfer_rental_token<'info>(
 ) -> Result<()> {
     if leaf_data.owner != ctx.accounts.sender.key() {
         return err!(MyError::InvalidLandNFTData);
+    }
+
+    if ctx.accounts.central_authority.merkle_tree_address != ctx.accounts.rental_merkle_tree.key() {
+        return err!(MyError::InvalidRentalAddressPassed);
     }
 
     let bump_seed = [ctx.bumps.central_authority];

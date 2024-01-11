@@ -14,6 +14,9 @@ pub enum MyError {
     #[msg("Provided Land NFT data is invalid")]
     InvalidLandNFTData,
 
+    #[msg("Provided Provided Rental Address is invalid")]
+    InvalidRentalAddressPassed,
+
     #[msg("Provided Accounts should be a multiple of 2")]
     InvalidRemainingAccountsPassed,
 }

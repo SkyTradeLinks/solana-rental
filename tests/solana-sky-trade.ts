@@ -204,11 +204,16 @@ describe("solana-sky-trade", () => {
           centralAuthority: centralAuthority,
           mintAccount: mintAccount.publicKey,
           systemProgram: anchor.web3.SystemProgram.programId,
+          rentalMerkleTree: rentalMerkleTree.publicKey,
         })
         .signers([centralizedAccount])
         .rpc();
     } catch (err: any) {
-      if (err["error"]["errorCode"]["code"] != "AlreadyInitialized") {
+      if (
+        err["error"] &&
+        err["error"]["errorCode"]["code"] == "AlreadyInitialized"
+      ) {
+      } else {
         throw err;
       }
     }
@@ -281,7 +286,7 @@ describe("solana-sky-trade", () => {
           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
           tokenProgram: TOKEN_PROGRAM_ID,
         })
-        .signers([centralizedAccount, caller, rentalMerkleTree]);
+        .signers([centralizedAccount, caller]);
       // .rpc();
 
       // await program.
@@ -370,7 +375,7 @@ describe("solana-sky-trade", () => {
       .mintRentalToken(Buffer.from(metadataBuffer), leavesData)
       .accounts({
         centralAuthority: centralAuthority,
-        centralizedAccount: centralizedAccount.publicKey,
+        centralizedAccount: publicKey(centralizedAccount.publicKey),
         mint: mintAccount.publicKey,
         centralizedAccountAta,
         caller: caller.publicKey,
@@ -385,7 +390,7 @@ describe("solana-sky-trade", () => {
         associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         tokenProgram: TOKEN_PROGRAM_ID,
       })
-      .signers([centralizedAccount, caller, rentalMerkleTree])
+      .signers([centralizedAccount, caller])
       .remainingAccounts(accountsToPass)
       .rpc();
 
@@ -418,18 +423,6 @@ describe("solana-sky-trade", () => {
     });
 
     const assetWithProof = await getAssetWithProof(umi, assetId);
-
-    // await verifyLeaf(umi, {
-    //   leaf: decode(assetWithProof.rpcAssetProof.leaf.toString()),
-    //   merkleTree: assetWithProof.merkleTree,
-    //   root: assetWithProof.root,
-    //   index: assetWithProof.index,
-    // }).sendAndConfirm(umi);
-
-    // await transfer(umi, {
-    //   ...assetWithProof,
-    //   newLeafOwner: publicKey(receiver.publicKey),
-    // }).sendAndConfirm(umi);
 
     let owner = new anchor.web3.PublicKey(assetWithProof.leafOwner);
 
@@ -478,7 +471,7 @@ describe("solana-sky-trade", () => {
         compressionProgram: SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,
         systemProgram: anchor.web3.SystemProgram.programId,
       })
-      .signers([centralizedAccount, caller, rentalMerkleTree])
+      .signers([centralizedAccount, caller])
       .remainingAccounts(proofs)
       .rpc();
 

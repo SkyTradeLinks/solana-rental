@@ -19,6 +19,9 @@ pub struct InitializePayload<'info> {
     #[account(mut, signer)]
     pub payer: Signer<'info>,
 
+    /// CHECK: This account is checked in the instruction
+    pub rental_merkle_tree: AccountInfo<'info>,
+
     pub system_program: Program<'info, System>,
 
     pub mint_account: Account<'info, Mint>,
@@ -36,6 +39,8 @@ pub fn handle_initialize(ctx: Context<InitializePayload>) -> Result<()> {
     data.initialized = true;
     data.base_cost = 1 * u64::pow(10, ctx.accounts.mint_account.decimals as u32);
     data.admin_quota = 0.3;
+    data.multiplier = 0.0;
+    data.merkle_tree_address = ctx.accounts.rental_merkle_tree.key();
 
     Ok(())
 }

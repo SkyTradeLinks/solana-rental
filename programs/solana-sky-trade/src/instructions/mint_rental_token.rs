@@ -45,8 +45,9 @@ pub struct MintRentalTokenPayload<'info> {
     )]
     pub caller_ata: Account<'info, TokenAccount>,
 
-    #[account(mut, signer)]
-    pub rental_merkle_tree: Signer<'info>,
+    /// CHECK: This account is checked in the instruction
+    #[account(mut)]
+    pub rental_merkle_tree: AccountInfo<'info>,
 
     /// CHECK: This account is checked in the instruction
     #[account(mut)]
@@ -80,6 +81,10 @@ pub fn handle_mint_rental_token<'info>(
     if ctx.accounts.central_authority.centralized_account != ctx.accounts.centralized_account.key()
     {
         return err!(MyError::InvalidAuthority);
+    }
+
+    if ctx.accounts.central_authority.merkle_tree_address != ctx.accounts.rental_merkle_tree.key() {
+        return err!(MyError::InvalidRentalAddressPassed);
     }
 
     let expected_cost = ctx.accounts.central_authority.base_cost;

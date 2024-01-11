@@ -1,14 +1,15 @@
 use anchor_lang::prelude::*;
 
 #[account]
-
 pub struct Data {
-    pub initialized: bool,           // 1
-    pub centralized_account: Pubkey, // 32
-    pub base_cost: u64,              // 8
-    pub admin_quota: f64,            // 8
+    pub initialized: bool,
+    pub centralized_account: Pubkey,
+    pub base_cost: u64,
+    pub admin_quota: f64,
+    pub multiplier: f64,
+    pub merkle_tree_address: Pubkey,
 }
 
 impl Data {
-    pub const MAX_SIZE: usize = (1 + 32 + 8 + 8);
+    pub const MAX_SIZE: usize = 1024 * 5;
 }
