@@ -34,12 +34,17 @@ pub fn handle_initialize(ctx: Context<InitializePayload>) -> Result<()> {
 
     let data = &mut ctx.accounts.central_authority;
 
-    // set centralized account
+    // Account That Signs Every Single Tx
     data.centralized_account = ctx.accounts.payer.key();
     data.initialized = true;
+
+    // 1 USDC
     data.base_cost = 1 * u64::pow(10, ctx.accounts.mint_account.decimals as u32);
+
+    // Admin Quota: 30%
     data.admin_quota = 0.3;
-    data.multiplier = 0.0;
+
+    // Rental Merkle Tree Address
     data.merkle_tree_address = ctx.accounts.rental_merkle_tree.key();
 
     Ok(())

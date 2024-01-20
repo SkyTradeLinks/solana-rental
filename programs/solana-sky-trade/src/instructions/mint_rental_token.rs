@@ -11,7 +11,7 @@ use mpl_bubblegum::{
     utils::get_asset_id,
 };
 
-use crate::{errors::*, get_rental_token_metadata, state::*, LeafData};
+use crate::{errors::*, state::*, LeafData};
 
 #[derive(Accounts)]
 pub struct MintRentalTokenPayload<'info> {
@@ -72,7 +72,7 @@ pub struct MintRentalTokenPayload<'info> {
 
 pub fn handle_mint_rental_token<'info>(
     ctx: Context<'_, '_, '_, 'info, MintRentalTokenPayload<'info>>,
-    metadata_args: Vec<u8>,
+    mint_metadata_args: Vec<u8>,
     leaves_data: Vec<LeafData>,
 ) -> Result<()> {
     let bump_seed = [ctx.bumps.central_authority];
@@ -87,7 +87,7 @@ pub fn handle_mint_rental_token<'info>(
         return err!(MyError::InvalidRentalAddressPassed);
     }
 
-    let expected_cost = ctx.accounts.central_authority.base_cost;
+    let expected_cost = ctx.accounts.central_authority.base_cost * leaves_data.len() as u64;
 
     if ctx.accounts.caller_ata.amount < expected_cost {
         return err!(MyError::InsuffientFunds);
@@ -106,11 +106,6 @@ pub fn handle_mint_rental_token<'info>(
         return err!(MyError::InvalidLandNFTData);
     }
 
-    let metadata = MetadataArgs::try_from_slice(metadata_args.as_slice())?;
-
-    let data_hash = hash_metadata(&metadata)?;
-    let creator_hash = hash_creators(&metadata.creators);
-
     for index in 0..length {
         let land_owner = next_account_info(accounts)?;
         let land_owner_ata = next_account_info(accounts)?;
@@ -127,6 +122,11 @@ pub fn handle_mint_rental_token<'info>(
             ctx.accounts.land_merkle_tree.key,
             leaf_data.leaf_nonce.into(),
         );
+
+        let metadata = MetadataArgs::try_from_slice(leaf_data.leaf_metadata.as_slice())?;
+
+        let data_hash = hash_metadata(&metadata)?;
+        let creator_hash = hash_creators(&metadata.creators);
 
         let schema = LeafSchema::V1 {
             id: asset_id,
@@ -197,6 +197,8 @@ pub fn handle_mint_rental_token<'info>(
         )?;
     }
 
+    let mint_metadata = MetadataArgs::try_from_slice(mint_metadata_args.as_slice())?;
+
     MintV1CpiBuilder::new(&ctx.accounts.bubblegum_program.to_account_info())
         .tree_config(&ctx.accounts.tree_config.to_account_info())
         .leaf_owner(&ctx.accounts.caller.to_account_info())
@@ -207,7 +209,7 @@ pub fn handle_mint_rental_token<'info>(
         .log_wrapper(&ctx.accounts.log_wrapper.to_account_info())
         .compression_program(&ctx.accounts.compression_program.to_account_info())
         .system_program(&ctx.accounts.system_program.to_account_info())
-        .metadata(get_rental_token_metadata())
+        .metadata(mint_metadata)
         .invoke_signed(signer_seeds)?;
 
     Ok(())

@@ -6,10 +6,9 @@ pub mod state;
 
 pub use errors::*;
 pub use instructions::*;
-use mpl_bubblegum::types::{MetadataArgs, TokenProgramVersion, TokenStandard};
 pub use state::*;
 
-declare_id!("ECx9bStpVGwfJAqotLg4zaEVeQRMH3L1r3E1DNtyvqAi");
+declare_id!("28G2s5E7pgfX1xBnLfQPagQsVcgBgqhjESpp9UqcPUdq");
 
 #[program]
 pub mod solana_sky_trade {
@@ -21,10 +20,10 @@ pub mod solana_sky_trade {
 
     pub fn mint_rental_token<'info>(
         ctx: Context<'_, '_, '_, 'info, MintRentalTokenPayload<'info>>,
-        metadata_args: Vec<u8>,
+        mint_metadata_args: Vec<u8>,
         leaves_data: Vec<LeafData>,
     ) -> Result<()> {
-        handle_mint_rental_token(ctx, metadata_args, leaves_data)
+        handle_mint_rental_token(ctx, mint_metadata_args, leaves_data)
     }
 
     pub fn transfer_rental_token<'info>(
@@ -47,32 +46,5 @@ pub mod solana_sky_trade {
         existing_data: Data,
     ) -> Result<()> {
         handle_increase_data_space(ctx, len, existing_data)
-    }
-}
-
-#[derive(Debug, Clone, AnchorDeserialize, AnchorSerialize)]
-pub struct LeafData {
-    pub leaf_index: u32,
-    pub leaf_nonce: u64,
-    pub owner: Pubkey,
-    pub delegate: Pubkey,
-    pub root: Pubkey,
-    pub leaf_hash: Option<[u8; 32]>,
-}
-
-pub fn get_rental_token_metadata() -> MetadataArgs {
-    MetadataArgs {
-        name: String::from("Test NFT"),
-        symbol: String::from("T-NFT"),
-        uri: String::from("Test URL"),
-        creators: vec![],
-        seller_fee_basis_points: 0,
-        primary_sale_happened: false,
-        is_mutable: false,
-        edition_nonce: None,
-        uses: None,
-        collection: None,
-        token_program_version: TokenProgramVersion::Original,
-        token_standard: Some(TokenStandard::NonFungible),
     }
 }

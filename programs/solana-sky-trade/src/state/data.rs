@@ -6,7 +6,6 @@ pub struct Data {
     pub centralized_account: Pubkey,
     pub base_cost: u64,
     pub admin_quota: f64,
-    pub multiplier: f64,
     pub merkle_tree_address: Pubkey,
 }
 

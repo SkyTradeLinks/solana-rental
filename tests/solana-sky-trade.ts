@@ -98,23 +98,6 @@ describe("solana-sky-trade", () => {
 
   let createdLeafIndex;
 
-  const metadataArgs = {
-    name: "Rental NFT",
-    symbol: "",
-    uri: "",
-    creators: [],
-    sellerFeeBasisPoints: 0,
-    primarySaleHappened: false,
-    isMutable: false,
-    editionNonce: null,
-    uses: null,
-    collection: null,
-    tokenProgramVersion: TokenProgramVersion.Original,
-    tokenStandard: TokenStandard.NonFungible,
-  };
-
-  let metadataBuffer = getMetadataArgsSerializer().serialize(metadataArgs);
-
   before(async () => {
     const arr = [];
 
@@ -213,6 +196,7 @@ describe("solana-sky-trade", () => {
         err["error"] &&
         err["error"]["errorCode"]["code"] == "AlreadyInitialized"
       ) {
+        // console.log(err)
       } else {
         throw err;
       }
@@ -222,7 +206,7 @@ describe("solana-sky-trade", () => {
   it("should fail as centralized account didn't call the function", async () => {
     try {
       await program.methods
-        .mintRentalToken(Buffer.from(metadataBuffer), [])
+        .mintRentalToken(Buffer.from(""), [])
         .accounts({
           centralAuthority: centralAuthority,
           centralizedAccount: caller.publicKey,
@@ -268,7 +252,7 @@ describe("solana-sky-trade", () => {
 
     try {
       await program.methods
-        .mintRentalToken(Buffer.from(metadataBuffer), [])
+        .mintRentalToken(Buffer.from(""), [])
         .accounts({
           centralAuthority: centralAuthority,
           centralizedAccount: centralizedAccount.publicKey,
@@ -325,7 +309,20 @@ describe("solana-sky-trade", () => {
           await mintV1(umi, {
             leafOwner: publicKey(collector.publicKey),
             merkleTree: publicKey(landMerkleTree.publicKey),
-            metadata: metadataArgs,
+            metadata: {
+              name: "Land NFT",
+              symbol: "",
+              uri: "",
+              creators: [],
+              sellerFeeBasisPoints: 0,
+              primarySaleHappened: false,
+              isMutable: false,
+              editionNonce: null,
+              uses: null,
+              collection: null,
+              tokenProgramVersion: TokenProgramVersion.Original,
+              tokenStandard: TokenStandard.NonFungible,
+            },
           }).sendAndConfirm(umi);
 
           assetWithProof = await getAssetWithProof(umi, assetId);
@@ -348,6 +345,9 @@ describe("solana-sky-trade", () => {
             assetWithProof.rpcAssetProof.leaf.toString()
           ).toBytes(),
         ],
+        leafMetadata: Buffer.from(
+          getMetadataArgsSerializer().serialize(assetWithProof.metadata)
+        ),
       };
 
       leavesData.push(leafData);
@@ -370,6 +370,21 @@ describe("solana-sky-trade", () => {
         isWritable: true,
       });
     }
+
+    let metadataBuffer = getMetadataArgsSerializer().serialize({
+      name: "Rental NFT",
+      symbol: "",
+      uri: "",
+      creators: [],
+      sellerFeeBasisPoints: 0,
+      primarySaleHappened: false,
+      isMutable: false,
+      editionNonce: null,
+      uses: null,
+      collection: null,
+      tokenProgramVersion: TokenProgramVersion.Original,
+      tokenStandard: TokenStandard.NonFungible,
+    });
 
     const mintSx = await program.methods
       .mintRentalToken(Buffer.from(metadataBuffer), leavesData)
@@ -440,6 +455,9 @@ describe("solana-sky-trade", () => {
           assetWithProof.rpcAssetProof.leaf.toString()
         ).toBytes(),
       ],
+      leafMetadata: Buffer.from(
+        getMetadataArgsSerializer().serialize(assetWithProof.metadata)
+      ),
     };
 
     let acc = await ConcurrentMerkleTreeAccount.fromAccountAddress(

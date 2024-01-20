@@ -1,4 +1,4 @@
-use crate::state::*;
+use crate::{state::*, MyError};
 use anchor_lang::prelude::*;
 
     
@@ -24,8 +24,11 @@ pub fn handle_increase_data_space(
     existing_data: Data,
 ) -> Result<()> {
 
+    if ctx.accounts.central_authority.centralized_account.key() != ctx.accounts.signer.key(){
+        return err!(MyError::InvalidAuthority);
+    }
+
     ctx.accounts.central_authority.initialized = existing_data.initialized;
-    ctx.accounts.central_authority.multiplier = existing_data.multiplier;
     ctx.accounts.central_authority.centralized_account = existing_data.centralized_account;
     ctx.accounts.central_authority.base_cost = existing_data.base_cost;
     ctx.accounts.central_authority.admin_quota = existing_data.admin_quota;

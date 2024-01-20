@@ -1,7 +1,8 @@
 use anchor_lang::prelude::*;
+use mpl_bubblegum::types::MetadataArgs;
 
+use crate::state::*;
 use crate::{errors::*, LeafData};
-use crate::{get_rental_token_metadata, state::*};
 
 use mpl_bubblegum::{
     hash::{hash_creators, hash_metadata},
@@ -25,6 +26,7 @@ pub struct TransferRentalTokenPayload<'info> {
     pub sender: Signer<'info>,
 
     /// CHECK: This account is checked in the instruction
+    #[account(mut)]
     pub rental_merkle_tree: AccountInfo<'info>,
 
     /// CHECK: This account is checked in the instruction
@@ -61,7 +63,7 @@ pub fn handle_transfer_rental_token<'info>(
     let bump_seed = [ctx.bumps.central_authority];
     let signer_seeds: &[&[&[u8]]] = &[&["central_authority".as_bytes(), &bump_seed.as_ref()]];
 
-    let metadata = get_rental_token_metadata();
+    let metadata = MetadataArgs::try_from_slice(leaf_data.leaf_metadata.as_slice())?;
 
     let data_hash = hash_metadata(&metadata)?;
     let creator_hash = hash_creators(&metadata.creators);

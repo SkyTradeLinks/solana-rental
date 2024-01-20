@@ -1,5 +1,6 @@
 use crate::{errors::*, state::*};
 use anchor_lang::prelude::*;
+use anchor_spl::token::Mint;
 
 #[derive(Accounts)]
 pub struct UpdateConfigPayload<'info> {
@@ -14,6 +15,8 @@ pub struct UpdateConfigPayload<'info> {
     pub centralized_account: Signer<'info>,
 
     pub system_program: Program<'info, System>,
+
+    pub mint_account: Account<'info, Mint>,
 }
 
 #[derive(Debug, Clone, AnchorDeserialize, AnchorSerialize)]
@@ -35,7 +38,8 @@ pub fn handle_update_config(
 
     match payload.base_cost {
         Some(value) => {
-            ctx.accounts.central_authority.base_cost = value * u64::pow(10, 6);
+            ctx.accounts.central_authority.base_cost =
+                value * u64::pow(10, ctx.accounts.mint_account.decimals as u32);
         }
         None => {}
     }
@@ -50,13 +54,6 @@ pub fn handle_update_config(
     match payload.merkle_tree_address {
         Some(value) => {
             ctx.accounts.central_authority.merkle_tree_address = value;
-        }
-        None => {}
-    }
-
-    match payload.multiplier {
-        Some(value) => {
-            ctx.accounts.central_authority.multiplier = value;
         }
         None => {}
     }
