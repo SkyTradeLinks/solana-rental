@@ -8,6 +8,10 @@ pub use errors::*;
 pub use instructions::*;
 pub use state::*;
 
+#[cfg(feature = "mainnet")]
+declare_id!("CAYRkXh52saZDzpQHwx9gMgzs7AnCmS5RnLFXhp2yzJF");
+
+#[cfg(not(feature = "mainnet"))]
 declare_id!("28G2s5E7pgfX1xBnLfQPagQsVcgBgqhjESpp9UqcPUdq");
 
 #[program]
@@ -26,25 +30,10 @@ pub mod solana_sky_trade {
         handle_mint_rental_token(ctx, mint_metadata_args, leaves_data)
     }
 
-    pub fn transfer_rental_token<'info>(
-        ctx: Context<'_, '_, '_, 'info, TransferRentalTokenPayload<'info>>,
-        leaf_data: LeafData,
-    ) -> Result<()> {
-        handle_transfer_rental_token(ctx, leaf_data)
-    }
-
     pub fn update_config(
         ctx: Context<UpdateConfigPayload>,
         payload: UpdateConfigData,
     ) -> Result<()> {
         handle_update_config(ctx, payload)
-    }
-
-    pub fn increase_data_space(
-        ctx: Context<IncreaseDataSpacePayload>,
-        len: u16,
-        existing_data: Data,
-    ) -> Result<()> {
-        handle_increase_data_space(ctx, len, existing_data)
     }
 }
