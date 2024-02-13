@@ -1,4 +1,4 @@
-import { LAMPORTS_PER_SOL, Keypair } from "@solana/web3.js";
+ import { LAMPORTS_PER_SOL, Keypair } from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
 import fs from "fs";
 import { TransactionWithMeta } from "@metaplex-foundation/umi";
