@@ -64,7 +64,6 @@ pub struct MintRentalTokenPayload<'info> {
 
     /// CHECK: This account is checked in the instruction
     pub compression_program: UncheckedAccount<'info>,
-
     pub system_program: Program<'info, System>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub token_program: Program<'info, Token>,
@@ -173,8 +172,6 @@ pub fn handle_mint_rental_token<'info>(
         expected_cost,
         decimals,
     )?;
-
-    msg!(expected_cost.to_string().as_str());
 
     let percent = (1 as f64 - ctx.accounts.central_authority.admin_quota) / nft_atas.len() as f64;
     let quota = percent * f64::powf(10.0, decimals as f64);

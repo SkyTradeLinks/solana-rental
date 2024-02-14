@@ -5,7 +5,6 @@ import { TransactionWithMeta } from "@metaplex-foundation/umi";
 import {
   MPL_BUBBLEGUM_PROGRAM_ID,
   SPL_NOOP_PROGRAM_ID,
-  SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,
 } from "@metaplex-foundation/mpl-bubblegum";
 import { deserializeChangeLogEventV1 } from "@solana/spl-account-compression";
 
@@ -75,6 +74,7 @@ export const findLeafIndexFromMetaplexTx = (txInfo: TransactionWithMeta) => {
 
 export const findLeafIndexFromAnchorTx = (txInfo: TransactionWithMeta) => {
   let leafIndex: number | undefined = undefined;
+  let treeAddress;
 
   let innerInstructions = txInfo.meta.innerInstructions;
 
@@ -91,6 +91,7 @@ export const findLeafIndexFromAnchorTx = (txInfo: TransactionWithMeta) => {
           );
 
           leafIndex = changeLogEvent?.index;
+          treeAddress = changeLogEvent?.treeId;
         } catch (__) {
           // do nothing, invalid data is handled just after the for loop
         }
@@ -99,5 +100,15 @@ export const findLeafIndexFromAnchorTx = (txInfo: TransactionWithMeta) => {
   }
 
   //
-  return leafIndex;
+  return [leafIndex, treeAddress];
+};
+
+export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+export const loadKeyPairV2 = (key) => {
+  const decodedKey = new Uint8Array(JSON.parse(key));
+
+  let keyPair = Keypair.fromSecretKey(decodedKey);
+
+  return keyPair;
 };
