@@ -8,10 +8,6 @@ pub use errors::*;
 pub use instructions::*;
 pub use state::*;
 
-#[cfg(feature = "mainnet")]
-declare_id!("CAYRkXh52saZDzpQHwx9gMgzs7AnCmS5RnLFXhp2yzJF");
-
-#[cfg(not(feature = "mainnet"))]
 declare_id!("28G2s5E7pgfX1xBnLfQPagQsVcgBgqhjESpp9UqcPUdq");
 
 #[program]
