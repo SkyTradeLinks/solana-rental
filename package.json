@@ -12,6 +12,7 @@
     "@solana/spl-account-compression": "^0.2.0",
     "@solana/spl-token": "^0.3.10",
     "@solana/web3.js": "^1.88.0",
+    "dotenv": "^16.4.5",
     "tweetnacl": "^1.0.3"
   },
   "devDependencies": {
