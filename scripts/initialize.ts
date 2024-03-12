@@ -26,7 +26,9 @@ import "dotenv/config";
   let merkleTreeCanopyDepth = 10;
 
   // input private key here
-  let centralizedAccount = loadKeyPairV2(process.env.CENTRALIZED_ACCOUNT);
+  let centralizedAccount = loadKeyPair(
+    join(__dirname, "..", process.env.CENTRALIZED_ACCOUNT)
+  );
 
   const wallet = new anchor.Wallet(centralizedAccount);
 
@@ -65,8 +67,13 @@ import "dotenv/config";
 
   // create merkle trees
 
-  const rentalMerkleTree = loadKeyPairV2(process.env.RENTAL_MERKLE_TREE);
-  const landMerkleTree = loadKeyPairV2(process.env.LAND_MERKLE_TREE);
+  const rentalMerkleTree = loadKeyPair(
+    join(__dirname, "..", process.env.RENTAL_MERKLE_TREE)
+  );
+
+  const landMerkleTree = loadKeyPair(
+    join(__dirname, "..", process.env.LAND_MERKLE_TREE)
+  );
 
   try {
     await fetchMerkleTree(umi, publicKey(landMerkleTree.publicKey));
