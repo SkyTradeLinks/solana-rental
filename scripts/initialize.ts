@@ -21,9 +21,9 @@ import "dotenv/config";
   // for creation of a billion cnfts
   // refer to https://developers.metaplex.com/bubblegum/create-trees
   // should cost an estimated 4.0291818 SOL x2 (as there are two merkle trees, bring total to just over 8 SOL)
-  let merkleTreeBufferSize = 512;
-  let merkleTreeDepth = 30;
-  let merkleTreeCanopyDepth = 10;
+  let merkleTreeBufferSize = parseInt(process.env.MERKLE_TREE_BUFFER_SIZE);
+  let merkleTreeDepth = parseInt(process.env.MERKLE_TREE_DEPTH);
+  let merkleTreeCanopyDepth = parseInt(process.env.MERKLE_TREE_CANOPY_DEPTH);
 
   // input private key here
   let centralizedAccount = loadKeyPair(process.env.CENTRALIZED_ACCOUNT);
@@ -31,9 +31,7 @@ import "dotenv/config";
   const wallet = new anchor.Wallet(centralizedAccount);
 
   // input connection uri
-  const connection = new Connection(
-    "https://devnet.helius-rpc.com/?api-key=887524e6-92b0-4f96-973c-b37a53a9cfe4"
-  );
+  const connection = new Connection(process.env.CONNECTION_URI);
 
   const provider = new anchor.AnchorProvider(connection, wallet, {});
   anchor.setProvider(provider);
@@ -60,7 +58,7 @@ import "dotenv/config";
 
   // input mint account
   const mintAccount = new anchor.web3.PublicKey(
-    "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+    process.env.MINT_ACCOUNT_ADDRESS
   );
 
   // create merkle trees
