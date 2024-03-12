@@ -107,15 +107,19 @@ import "dotenv/config";
     }
   }
 
-  await program.methods
-    .initialize()
-    .accounts({
-      payer: centralizedAccount.publicKey,
-      centralAuthority: centralAuthority,
-      mintAccount: mintAccount,
-      systemProgram: anchor.web3.SystemProgram.programId,
-      rentalMerkleTree: rentalMerkleTree.publicKey,
-    })
-    .signers([centralizedAccount])
-    .rpc();
+  try {
+    await program.methods
+      .initialize()
+      .accounts({
+        payer: centralizedAccount.publicKey,
+        centralAuthority: centralAuthority,
+        mintAccount: mintAccount,
+        systemProgram: anchor.web3.SystemProgram.programId,
+        rentalMerkleTree: rentalMerkleTree.publicKey,
+      })
+      .signers([centralizedAccount])
+      .rpc();
+  } catch (err) {
+    console.log(err);
+  }
 })();
