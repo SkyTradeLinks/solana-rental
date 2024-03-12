@@ -8,13 +8,13 @@ pub enum MyError {
     #[msg("Invalid authority provided!")]
     InvalidAuthority,
 
-    #[msg("Caller doesn't have enough tokens to complete this call")]
+    #[msg("Caller doesn't have enough funds to complete this call")]
     InsuffientFunds,
 
     #[msg("Provided Land NFT data is invalid")]
     InvalidLandNFTData,
 
-    #[msg("Provided Provided Rental Address is invalid")]
+    #[msg("Provided Rental Address is invalid")]
     InvalidRentalAddressPassed,
 
     #[msg("Provided Accounts should be a multiple of 2")]
