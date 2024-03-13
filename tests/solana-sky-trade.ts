@@ -54,7 +54,10 @@ import {
   NONCE_ACCOUNT_LENGTH,
   PublicKey,
   SystemProgram,
+  Transaction,
 } from "@solana/web3.js";
+
+import "dotenv/config";
 
 import { decode } from "@coral-xyz/anchor/dist/cjs/utils/bytes/bs58";
 import { assert } from "chai";
@@ -78,9 +81,7 @@ describe("solana-sky-trade", () => {
   );
 
   // DiW5MWFjPR3AeVd28ChEhsGb96efhHwst9eYwy8YdWEf
-  const centralizedAccount = loadKeyPair(
-    join(__dirname, "wallets", "centralizedAccount.json")
-  );
+  const centralizedAccount = loadKeyPair(process.env.CENTRALIZED_ACCOUNT);
 
   // AaNPFmjn23stSpFknsuHzB3UvWwnxVU9dXygqjHhnkiu
   const caller = loadKeyPair(join(__dirname, "wallets", "caller.json"));
@@ -90,13 +91,9 @@ describe("solana-sky-trade", () => {
     centralizedAccount.publicKey
   );
 
-  const rentalMerkleTree = loadKeyPair(
-    join(__dirname, "wallets", "rentalMerkleTree.json")
-  );
+  const rentalMerkleTree = loadKeyPair(process.env.RENTAL_MERKLE_TREE);
 
-  const landMerkleTree = loadKeyPair(
-    join(__dirname, "wallets", "landMerkleTree.json")
-  );
+  const landMerkleTree = loadKeyPair(process.env.LAND_MERKLE_TREE);
 
   const callerAta = getAssociatedTokenAddressSync(
     mintAccount,
@@ -431,6 +428,11 @@ describe("solana-sky-trade", () => {
       tokenStandard: TokenStandard.NonFungible,
     });
 
+    // let a = await getAccount(provider.connection, centralizedAccountAta);
+
+    // console.log(a)
+    // return
+
     let ix = await program.methods
       .mintRentalToken(Buffer.from(metadataBuffer), leavesData)
       .accounts({
@@ -453,18 +455,21 @@ describe("solana-sky-trade", () => {
       .remainingAccounts(accountsToPass)
       .instruction();
 
-    let [tx, nonceBlock] = await createTxWithNonce(
-      provider.connection,
-      nonceAccount.publicKey,
-      centralizedAccount.publicKey
-    );
+    // let [tx, nonceBlock] = await createTxWithNonce(
+    //   provider.connection,
+    //   nonceAccount.publicKey,
+    //   centralizedAccount.publicKey
+    // );
+
+    let tx = new Transaction();
 
     tx = tx.add(ix);
 
-    // let blockhash = (await provider.connection.getLatestBlockhash("finalized"))
-    //   .blockhash;
+    let blockhash = (await provider.connection.getLatestBlockhash("finalized"))
+      .blockhash;
 
-    tx.recentBlockhash = nonceBlock.nonce;
+    // tx.recentBlockhash = nonceBlock.nonce;
+    tx.recentBlockhash = blockhash;
     tx.feePayer = centralizedAccount.publicKey;
 
     // caller
@@ -472,7 +477,7 @@ describe("solana-sky-trade", () => {
     tx.sign(caller);
     tx.partialSign(centralizedAccount);
 
-    await sleep(90 * 1000);
+    // await sleep(90 * 1000);
 
     // sign with nonce
 

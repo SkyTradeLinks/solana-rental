@@ -1,6 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
-import { loadKeyPair, loadKeyPairV2 } from "../helper";
-import { Connection } from "@solana/web3.js";
+import { loadKeyPair, loadKeyPairV2, validateTxExecution } from "../helper";
+import { Connection, NONCE_ACCOUNT_LENGTH, SystemProgram } from "@solana/web3.js";
 import { SolanaSkyTrade } from "../target/types/solana_sky_trade";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import {
@@ -14,7 +14,6 @@ import {
   publicKey,
   signerIdentity,
 } from "@metaplex-foundation/umi";
-import { join } from "path";
 import "dotenv/config";
 
 (async () => {
@@ -66,6 +65,8 @@ import "dotenv/config";
   const rentalMerkleTree = loadKeyPair(process.env.RENTAL_MERKLE_TREE);
 
   const landMerkleTree = loadKeyPair(process.env.LAND_MERKLE_TREE);
+
+  const nonceAccount = loadKeyPair(process.env.NONCE_ACCOUNT)
 
   try {
     await fetchMerkleTree(umi, publicKey(landMerkleTree.publicKey));
@@ -121,5 +122,46 @@ import "dotenv/config";
       .rpc();
   } catch (err) {
     console.log(err);
+  }
+
+  let account = await umi.rpc.getAccount(publicKey(nonceAccount.publicKey));
+
+  if (!account.exists) {
+    let tx = new anchor.web3.Transaction().add(
+      // create nonce account
+      SystemProgram.createAccount({
+        fromPubkey: centralizedAccount.publicKey,
+        newAccountPubkey: nonceAccount.publicKey,
+        lamports: await provider.connection.getMinimumBalanceForRentExemption(
+          NONCE_ACCOUNT_LENGTH
+        ),
+        space: NONCE_ACCOUNT_LENGTH,
+        programId: SystemProgram.programId,
+      }),
+      // init nonce account
+      SystemProgram.nonceInitialize({
+        noncePubkey: nonceAccount.publicKey, // nonce account pubkey
+        authorizedPubkey: centralizedAccount.publicKey, // nonce account authority (for advance and close)
+      })
+    );
+
+    let blockhash = (await provider.connection.getLatestBlockhash("finalized"))
+      .blockhash;
+
+    tx.recentBlockhash = blockhash;
+    tx.feePayer = centralizedAccount.publicKey;
+
+    tx.partialSign(centralizedAccount);
+    tx.partialSign(nonceAccount);
+
+    let signature = await provider.connection.sendRawTransaction(
+      tx.serialize()
+    );
+
+    let txInfo = await validateTxExecution(signature, umi);
+
+    if (txInfo != null) {
+      // console.log(txInfo);
+    }
   }
 })();
