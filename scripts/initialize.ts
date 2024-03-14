@@ -49,6 +49,8 @@ import "dotenv/config";
   const program = anchor.workspace
     .SolanaSkyTrade as anchor.Program<SolanaSkyTrade>;
 
+  console.log(program.programId); // No idea why, but this line is important. Otherwise, the script breaks...
+  
   // data pda
   const centralAuthority = anchor.web3.PublicKey.findProgramAddressSync(
     [Buffer.from("central_authority")],
