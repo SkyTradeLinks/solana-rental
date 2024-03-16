@@ -434,7 +434,7 @@ describe("solana-sky-trade", () => {
     // return
 
     let centralAuthorityInfo = await program.account.data.fetch(
-      centralizedAccount.publicKey
+      centralAuthority
     );
 
     let feeAccountAta = await getAssociatedTokenAddress(
