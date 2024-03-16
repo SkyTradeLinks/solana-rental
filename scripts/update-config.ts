@@ -105,4 +105,6 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
     })
     .signers([centralizedAccount])
     .rpc();
+
+  console.log("successfully changed config");
 })();

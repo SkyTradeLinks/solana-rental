@@ -182,4 +182,6 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
       // console.log(txInfo);
     }
   }
+
+  console.log("successfully initialized ");
 })();
