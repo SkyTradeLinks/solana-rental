@@ -20,6 +20,9 @@ pub struct InitializePayload<'info> {
     pub payer: Signer<'info>,
 
     /// CHECK: This account is checked in the instruction
+    pub fee_account: AccountInfo<'info>,
+
+    /// CHECK: This account is checked in the instruction
     pub rental_merkle_tree: AccountInfo<'info>,
 
     pub system_program: Program<'info, System>,
@@ -46,6 +49,9 @@ pub fn handle_initialize(ctx: Context<InitializePayload>) -> Result<()> {
 
     // Rental Merkle Tree Address
     data.merkle_tree_address = ctx.accounts.rental_merkle_tree.key();
+
+    // Fee Account
+    data.fee_account = ctx.accounts.fee_account.key();
 
     Ok(())
 }

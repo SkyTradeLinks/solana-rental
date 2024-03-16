@@ -433,6 +433,15 @@ describe("solana-sky-trade", () => {
     // console.log(a)
     // return
 
+    let centralAuthorityInfo = await program.account.data.fetch(
+      centralizedAccount.publicKey
+    );
+
+    let feeAccountAta = await getAssociatedTokenAddress(
+      mintAccount,
+      centralAuthorityInfo.feeAccount
+    );
+
     let ix = await program.methods
       .mintRentalToken(Buffer.from(metadataBuffer), leavesData)
       .accounts({
@@ -451,6 +460,7 @@ describe("solana-sky-trade", () => {
         systemProgram: anchor.web3.SystemProgram.programId,
         associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         tokenProgram: TOKEN_PROGRAM_ID,
+        feeAccountAta,
       })
       .remainingAccounts(accountsToPass)
       .instruction();

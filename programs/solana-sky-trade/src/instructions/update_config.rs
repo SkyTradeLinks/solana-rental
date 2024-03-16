@@ -25,6 +25,7 @@ pub struct UpdateConfigData {
     pub admin_quota: Option<f64>,
     pub merkle_tree_address: Option<Pubkey>,
     pub multiplier: Option<f64>,
+    pub fee_account: Option<Pubkey>,
 }
 
 pub fn handle_update_config(
@@ -55,6 +56,11 @@ pub fn handle_update_config(
         Some(value) => {
             ctx.accounts.central_authority.merkle_tree_address = value;
         }
+        None => {}
+    }
+
+    match payload.fee_account {
+        Some(value) => ctx.accounts.central_authority.fee_account = value,
         None => {}
     }
 

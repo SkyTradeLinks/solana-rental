@@ -1,6 +1,10 @@
 import * as anchor from "@coral-xyz/anchor";
 import { loadKeyPair, loadKeyPairV2, validateTxExecution } from "../helper";
-import { Connection, NONCE_ACCOUNT_LENGTH, SystemProgram } from "@solana/web3.js";
+import {
+  Connection,
+  NONCE_ACCOUNT_LENGTH,
+  SystemProgram,
+} from "@solana/web3.js";
 import { SolanaSkyTrade } from "../target/types/solana_sky_trade";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import {
@@ -15,6 +19,7 @@ import {
   signerIdentity,
 } from "@metaplex-foundation/umi";
 import "dotenv/config";
+import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
 
 (async () => {
   // for creation of a billion cnfts
@@ -50,7 +55,7 @@ import "dotenv/config";
     .SolanaSkyTrade as anchor.Program<SolanaSkyTrade>;
 
   console.log(program.programId); // No idea why, but this line is important. Otherwise, the script breaks...
-  
+
   // data pda
   const centralAuthority = anchor.web3.PublicKey.findProgramAddressSync(
     [Buffer.from("central_authority")],
@@ -68,7 +73,17 @@ import "dotenv/config";
 
   const landMerkleTree = loadKeyPair(process.env.LAND_MERKLE_TREE);
 
-  const nonceAccount = loadKeyPair(process.env.NONCE_ACCOUNT)
+  const nonceAccount = loadKeyPair(process.env.NONCE_ACCOUNT);
+
+  let feeAccount = new anchor.web3.PublicKey(process.env.FEE_ACCOUNT);
+
+  // needs to have ata address (USDC) before assigning as fee Account
+  await getOrCreateAssociatedTokenAccount(
+    provider.connection,
+    centralizedAccount,
+    mintAccount,
+    feeAccount
+  );
 
   try {
     await fetchMerkleTree(umi, publicKey(landMerkleTree.publicKey));
@@ -119,6 +134,7 @@ import "dotenv/config";
         mintAccount: mintAccount,
         systemProgram: anchor.web3.SystemProgram.programId,
         rentalMerkleTree: rentalMerkleTree.publicKey,
+        feeAccount,
       })
       .signers([centralizedAccount])
       .rpc();
