@@ -78,7 +78,7 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
   let feeAccount = new anchor.web3.PublicKey(process.env.FEE_ACCOUNT);
 
   // needs to have ata address (USDC) before assigning as fee Account
-  await getOrCreateAssociatedTokenAccount(
+  let feeAta = await getOrCreateAssociatedTokenAccount(
     provider.connection,
     centralizedAccount,
     mintAccount,
@@ -134,7 +134,7 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
         mintAccount: mintAccount,
         systemProgram: anchor.web3.SystemProgram.programId,
         rentalMerkleTree: rentalMerkleTree.publicKey,
-        feeAccount,
+        feeAccount: feeAta.address,
       })
       .signers([centralizedAccount])
       .rpc();
