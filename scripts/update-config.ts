@@ -38,6 +38,8 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
   const program = anchor.workspace
     .SolanaSkyTrade as anchor.Program<SolanaSkyTrade>;
 
+  console.log(program.programId);
+
   // data pda
   const centralAuthority = anchor.web3.PublicKey.findProgramAddressSync(
     [Buffer.from("central_authority")],

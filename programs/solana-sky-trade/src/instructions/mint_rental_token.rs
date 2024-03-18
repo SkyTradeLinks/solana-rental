@@ -89,6 +89,15 @@ pub fn handle_mint_rental_token<'info>(
         return err!(MyError::InvalidRentalAddressPassed);
     }
 
+    let expected_fee_ata = get_associated_token_address(
+        &ctx.accounts.central_authority.fee_account,
+        &ctx.accounts.mint.key(),
+    );
+
+    if expected_fee_ata != ctx.accounts.fee_account_ata.key() {
+        return err!(MyError::InvalidAuthority);
+    }
+
     let expected_cost = ctx.accounts.central_authority.base_cost * leaves_data.len() as u64;
 
     if ctx.accounts.caller_ata.amount < expected_cost {
