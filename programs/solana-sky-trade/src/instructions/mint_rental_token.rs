@@ -57,6 +57,9 @@ pub struct MintRentalTokenPayload<'info> {
     pub land_merkle_tree: UncheckedAccount<'info>,
 
     /// CHECK: This account is checked in the instruction
+    pub fee_account_ata: UncheckedAccount<'info>,
+
+    /// CHECK: This account is checked in the instruction
     pub bubblegum_program: UncheckedAccount<'info>,
 
     /// CHECK: This account is checked in the instruction
@@ -193,6 +196,21 @@ pub fn handle_mint_rental_token<'info>(
             decimals,
         )?;
     }
+
+    // Transfer To Fee Account
+    transfer_checked(
+        CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            TransferChecked {
+                from: ctx.accounts.centralized_account_ata.to_account_info(),
+                mint: ctx.accounts.mint.to_account_info(),
+                to: ctx.accounts.fee_account_ata.to_account_info(),
+                authority: ctx.accounts.centralized_account.to_account_info(),
+            },
+        ),
+        quota,
+        decimals,
+    )?;
 
     let mint_metadata = MetadataArgs::try_from_slice(mint_metadata_args.as_slice())?;
 

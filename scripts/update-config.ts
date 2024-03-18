@@ -10,8 +10,9 @@ import {
   signerIdentity,
 } from "@metaplex-foundation/umi";
 import "dotenv/config";
+import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
 
-async () => {
+(async () => {
   // input private key here
   let centralizedAccount = loadKeyPair(process.env.CENTRALIZED_ACCOUNT);
 
@@ -50,8 +51,8 @@ async () => {
 
   let baseCost = null;
 
-  if (parseInt(process.env.NEW_PRICE)) {
-    baseCost = new anchor.BN(parseInt(process.env.NEW_PRICE));
+  if (parseFloat(process.env.NEW_PRICE)) {
+    baseCost = new anchor.BN(parseFloat(process.env.NEW_PRICE));
   }
 
   let adminQuota = null;
@@ -70,12 +71,31 @@ async () => {
     }
   }
 
+  let feeAccount = null;
+
+  if (process.env.FEE_ACCOUNT) {
+    try {
+      feeAccount = new anchor.web3.PublicKey(process.env.FEE_ACCOUNT);
+
+      // needs to have ata address (USDC) before assigning as fee Account
+      await getOrCreateAssociatedTokenAccount(
+        provider.connection,
+        centralizedAccount,
+        mintAccount,
+        feeAccount
+      );
+    } catch (err) {
+      throw "Invalid Address Provided";
+    }
+  }
+
   await program.methods
     .updateConfig({
       baseCost,
       adminQuota,
       merkleTreeAddress: newMerkleTree,
       multiplier: null,
+      feeAccount,
     })
     .accounts({
       centralAuthority: centralAuthority,
@@ -85,4 +105,6 @@ async () => {
     })
     .signers([centralizedAccount])
     .rpc();
-};
+
+  console.log("successfully changed config");
+})();
