@@ -1,6 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import { loadKeyPair, loadKeyPairV2, validateTxExecution } from "../helper";
-import { Connection } from "@solana/web3.js";
+import { Connection, PublicKey } from "@solana/web3.js";
 import { SolanaSkyTrade } from "../target/types/solana_sky_trade";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { mplBubblegum } from "@metaplex-foundation/mpl-bubblegum";
@@ -119,6 +119,5 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
   tx.sign(centralizedAccount)
 
   await provider.connection.sendRawTransaction(tx.serialize());
-
   console.log("successfully changed config");
 })();

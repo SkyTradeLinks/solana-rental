@@ -57,6 +57,7 @@ pub struct MintRentalTokenPayload<'info> {
     pub land_merkle_tree: UncheckedAccount<'info>,
 
     /// CHECK: This account is checked in the instruction
+    #[account(mut)]
     pub fee_account_ata: UncheckedAccount<'info>,
 
     /// CHECK: This account is checked in the instruction
