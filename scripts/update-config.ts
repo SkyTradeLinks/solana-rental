@@ -91,7 +91,7 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
     }
   }
 
-  await program.methods
+  let ix = await program.methods
     .updateConfig({
       baseCost,
       adminQuota,
@@ -105,8 +105,20 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
       systemProgram: anchor.web3.SystemProgram.programId,
       mintAccount: mintAccount,
     })
-    .signers([centralizedAccount])
-    .rpc();
+    .instruction();
+
+  let tx = new anchor.web3.Transaction();
+
+  tx.add(ix);
+
+  tx.recentBlockhash = await (
+    await provider.connection.getLatestBlockhash()
+  ).blockhash;
+
+  tx.feePayer = centralizedAccount.publicKey;
+  tx.sign(centralizedAccount)
+
+  await provider.connection.sendRawTransaction(tx.serialize());
 
   console.log("successfully changed config");
 })();

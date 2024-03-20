@@ -126,7 +126,7 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
   }
 
   try {
-    await program.methods
+    let ix = await program.methods
       .initialize()
       .accounts({
         payer: centralizedAccount.publicKey,
@@ -136,8 +136,20 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
         rentalMerkleTree: rentalMerkleTree.publicKey,
         feeAccount: feeAta.address,
       })
-      .signers([centralizedAccount])
-      .rpc();
+      .instruction();
+
+    let tx = new anchor.web3.Transaction();
+
+    tx.add(ix);
+
+    tx.recentBlockhash = await (
+      await provider.connection.getLatestBlockhash()
+    ).blockhash;
+
+    tx.feePayer = centralizedAccount.publicKey;
+    tx.sign(centralizedAccount);
+
+    await provider.connection.sendRawTransaction(tx.serialize());
   } catch (err) {
     console.log(err);
   }
