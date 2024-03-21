@@ -1,6 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
-import { loadKeyPair, loadKeyPairV2, validateTxExecution } from "../helper";
-import { Connection, PublicKey } from "@solana/web3.js";
+import { getPriorityFeeIx, loadKeyPair, validateTxExecution } from "../helper";
+import { Connection } from "@solana/web3.js";
 import { SolanaSkyTrade } from "../target/types/solana_sky_trade";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { mplBubblegum } from "@metaplex-foundation/mpl-bubblegum";
@@ -91,6 +91,8 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
     }
   }
 
+  let priorityIx = await getPriorityFeeIx(provider.connection);
+
   let ix = await program.methods
     .updateConfig({
       baseCost,
@@ -109,6 +111,7 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
 
   let tx = new anchor.web3.Transaction();
 
+  tx.add(priorityIx);
   tx.add(ix);
 
   tx.recentBlockhash = await (
@@ -116,8 +119,11 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
   ).blockhash;
 
   tx.feePayer = centralizedAccount.publicKey;
-  tx.sign(centralizedAccount)
+  tx.sign(centralizedAccount);
 
-  await provider.connection.sendRawTransaction(tx.serialize());
+  let sx = await provider.connection.sendRawTransaction(tx.serialize());
+
+  await validateTxExecution(sx, umi);
+
   console.log("successfully changed config");
 })();

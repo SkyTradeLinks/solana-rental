@@ -1,5 +1,10 @@
 import * as anchor from "@coral-xyz/anchor";
-import { loadKeyPair, loadKeyPairV2, validateTxExecution } from "../helper";
+import {
+  getPriorityFeeIx,
+  loadKeyPair,
+  loadKeyPairV2,
+  validateTxExecution,
+} from "../helper";
 import {
   Connection,
   NONCE_ACCOUNT_LENGTH,
@@ -126,6 +131,8 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
   }
 
   try {
+    let priorityIx = await getPriorityFeeIx(provider.connection);
+
     let ix = await program.methods
       .initialize()
       .accounts({
@@ -140,6 +147,7 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
 
     let tx = new anchor.web3.Transaction();
 
+    tx.add(priorityIx);
     tx.add(ix);
 
     tx.recentBlockhash = await (
@@ -149,7 +157,9 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
     tx.feePayer = centralizedAccount.publicKey;
     tx.sign(centralizedAccount);
 
-    await provider.connection.sendRawTransaction(tx.serialize());
+    let sx = await provider.connection.sendRawTransaction(tx.serialize());
+
+    await validateTxExecution(sx, umi);
   } catch (err) {
     console.log(err);
   }

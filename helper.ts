@@ -3,6 +3,7 @@ import {
   Keypair,
   SystemProgram,
   NonceAccount,
+  ComputeBudgetProgram,
 } from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
 import fs from "fs";
@@ -13,7 +14,6 @@ import {
 } from "@metaplex-foundation/mpl-bubblegum";
 import { deserializeChangeLogEventV1 } from "@solana/spl-account-compression";
 import { decode } from "@coral-xyz/anchor/dist/cjs/utils/bytes/bs58";
-import { string } from "@metaplex-foundation/umi/serializers";
 
 export const setupAirDrop = async (
   provider: anchor.AnchorProvider,
@@ -158,4 +158,17 @@ export const createTxWithNonce = async (
   );
 
   return [tx, nonceAccount];
+};
+
+export const getPriorityFeeIx = async (connection: anchor.web3.Connection) => {
+  let fees = await connection.getRecentPrioritizationFees();
+  let maxPrioritizationFee = fees.reduce((max, cur) => {
+    return cur.prioritizationFee > max.prioritizationFee ? cur : max;
+  }, fees[0]);
+
+  const PRIORITY_FEE_IX = ComputeBudgetProgram.setComputeUnitPrice({
+    microLamports: maxPrioritizationFee.prioritizationFee,
+  });
+
+  return PRIORITY_FEE_IX;
 };
