@@ -11,3 +11,5 @@ test-ledger
 **/wallets
 
 .env
+
+**/keys
