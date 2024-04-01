@@ -21,7 +21,7 @@ pub struct UpdateConfigPayload<'info> {
 
 #[derive(Debug, Clone, AnchorDeserialize, AnchorSerialize)]
 pub struct UpdateConfigData {
-    pub base_cost: Option<u64>,
+    pub base_cost: Option<f64>,
     pub admin_quota: Option<f64>,
     pub merkle_tree_address: Option<Pubkey>,
     pub multiplier: Option<f64>,
@@ -39,8 +39,8 @@ pub fn handle_update_config(
 
     match payload.base_cost {
         Some(value) => {
-            ctx.accounts.central_authority.base_cost =
-                value * u64::pow(10, ctx.accounts.mint_account.decimals as u32);
+            ctx.accounts.central_authority.base_cost = (
+                value * f64::powf(10.0, ctx.accounts.mint_account.decimals.into())) as u64;
         }
         None => {}
     }

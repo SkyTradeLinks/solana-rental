@@ -207,18 +207,21 @@ pub fn handle_mint_rental_token<'info>(
         )?;
     }
 
+    let fee_quota = ctx.accounts.central_authority.admin_quota * f64::powf(10.0, decimals as f64);
+    let fee_quota = fee_quota as u64;
+
     // Transfer To Fee Account
     transfer_checked(
         CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
             TransferChecked {
-                from: ctx.accounts.centralized_account_ata.to_account_info(),
+            from: ctx.accounts.centralized_account_ata.to_account_info(),
                 mint: ctx.accounts.mint.to_account_info(),
                 to: ctx.accounts.fee_account_ata.to_account_info(),
                 authority: ctx.accounts.centralized_account.to_account_info(),
             },
         ),
-        quota,
+        fee_quota,
         decimals,
     )?;
 
