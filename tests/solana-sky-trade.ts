@@ -4,6 +4,7 @@ import { SolanaSkyTrade } from "../target/types/solana_sky_trade";
 import {
   createTxWithNonce,
   findLeafIndexFromAnchorTx,
+  getTxSize,
   loadKeyPair,
   setupAirDrop,
   sleep,
@@ -63,13 +64,23 @@ import { decode } from "@coral-xyz/anchor/dist/cjs/utils/bytes/bs58";
 import { assert } from "chai";
 import { ConcurrentMerkleTreeAccount } from "@solana/spl-account-compression";
 
+import {
+  findCollectionAuthorityRecordPda,
+  mplTokenMetadata,
+  findMetadataPda,
+  findMasterEditionPda,
+  MPL_TOKEN_METADATA_PROGRAM_ID,
+} from "@metaplex-foundation/mpl-token-metadata";
+
 describe("solana-sky-trade", () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
 
   const program = anchor.workspace.SolanaSkyTrade as Program<SolanaSkyTrade>;
 
-  const umi = createUmi(provider.connection.rpcEndpoint).use(mplBubblegum());
+  const umi = createUmi(provider.connection.rpcEndpoint)
+    .use(mplBubblegum())
+    .use(mplTokenMetadata());
 
   const centralAuthority = anchor.web3.PublicKey.findProgramAddressSync(
     [Buffer.from("central_authority")],
@@ -82,6 +93,8 @@ describe("solana-sky-trade", () => {
 
   // DiW5MWFjPR3AeVd28ChEhsGb96efhHwst9eYwy8YdWEf
   const centralizedAccount = loadKeyPair(process.env.CENTRALIZED_ACCOUNT);
+
+  console.log(centralizedAccount.publicKey);
 
   // AaNPFmjn23stSpFknsuHzB3UvWwnxVU9dXygqjHhnkiu
   const caller = loadKeyPair(join(__dirname, "wallets", "caller.json"));
@@ -413,25 +426,29 @@ describe("solana-sky-trade", () => {
       });
     }
 
+    let collectionMint = new PublicKey(
+      "94pbP1FULSAFPk9BVhKA7NHG62ijCtQkGyXvQsxaYvDr"
+    );
+
     let metadataBuffer = getMetadataArgsSerializer().serialize({
       name: "Rental NFT",
       symbol: "",
       uri: "",
-      creators: [],
+      creators: [
+        { address: umi.identity.publicKey, verified: true, share: 100 },
+      ],
       sellerFeeBasisPoints: 0,
       primarySaleHappened: false,
       isMutable: false,
       editionNonce: null,
       uses: null,
-      collection: null,
+      collection: {
+        key: publicKey(collectionMint),
+        verified: true,
+      },
       tokenProgramVersion: TokenProgramVersion.Original,
       tokenStandard: TokenStandard.NonFungible,
     });
-
-    // let a = await getAccount(provider.connection, centralizedAccountAta);
-
-    // console.log(a)
-    // return
 
     let centralAuthorityInfo = await program.account.data.fetch(
       centralAuthority
@@ -441,6 +458,22 @@ describe("solana-sky-trade", () => {
       mintAccount,
       centralAuthorityInfo.feeAccount
     );
+
+    let [collectionMetadata] = findMetadataPda(umi, {
+      mint: publicKey(collectionMint),
+    });
+
+    let [collectionEdition] = findMasterEditionPda(umi, {
+      mint: publicKey(collectionMint),
+    });
+
+    const [bubblegumSigner] = PublicKey.findProgramAddressSync(
+      // `collection_cpi` is a custom prefix required by the Bubblegum program
+      [Buffer.from("collection_cpi", "utf8")],
+      new PublicKey(MPL_BUBBLEGUM_PROGRAM_ID)
+    );
+
+    console.log(bubblegumSigner);
 
     let ix = await program.methods
       .mintRentalToken(Buffer.from(metadataBuffer), leavesData)
@@ -460,6 +493,11 @@ describe("solana-sky-trade", () => {
         systemProgram: anchor.web3.SystemProgram.programId,
         associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         tokenProgram: TOKEN_PROGRAM_ID,
+        collectionMint,
+        collectionMetadata,
+        collectionEdition,
+        bubblegumSigner,
+        tokenMetadataProgram: MPL_TOKEN_METADATA_PROGRAM_ID,
         feeAccountAta,
       })
       .remainingAccounts(accountsToPass)
@@ -486,12 +524,21 @@ describe("solana-sky-trade", () => {
 
     tx.sign(caller);
     tx.partialSign(centralizedAccount);
+    // tx.partialSign(bubblegumSigner)
+
+    console.log(getTxSize(tx, centralizedAccount.publicKey));
 
     // await sleep(90 * 1000);
 
     // sign with nonce
 
-    let mintSx = await provider.connection.sendRawTransaction(tx.serialize());
+    let mintSx;
+
+    try {
+      mintSx = await provider.connection.sendRawTransaction(tx.serialize());
+    } catch (err) {
+      console.log(err);
+    }
 
     let mintTxInfo;
 

@@ -15,16 +15,28 @@ import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import {
   createTree,
   fetchMerkleTree,
+  mintToCollectionV1,
   mplBubblegum,
 } from "@metaplex-foundation/mpl-bubblegum";
 import {
   AccountNotFoundError,
   createSignerFromKeypair,
+  percentAmount,
   publicKey,
   signerIdentity,
 } from "@metaplex-foundation/umi";
 import "dotenv/config";
 import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
+import {
+  createNft,
+  mplTokenMetadata,
+  findCollectionAuthorityRecordPda,
+  findMetadataPda,
+  findEditionMarkerV2Pda,
+  findMasterEditionPda,
+  verifyCollectionV1,
+} from "@metaplex-foundation/mpl-token-metadata";
+import { join } from "path";
 
 (async () => {
   // for creation of a billion cnfts
@@ -46,14 +58,19 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
   anchor.setProvider(provider);
 
   // setup umi
-  const umi = createUmi(provider.connection.rpcEndpoint).use(mplBubblegum());
+  const umi = createUmi(provider.connection.rpcEndpoint)
+    .use(mplBubblegum())
+    .use(mplTokenMetadata());
 
+  // doubles as a collectionUpdateAuthority
   let authoritySigner = createSignerFromKeypair(umi, {
     secretKey: centralizedAccount.secretKey,
     publicKey: publicKey(centralizedAccount.publicKey),
   });
 
   umi.use(signerIdentity(authoritySigner));
+
+  // findCollectionAuthorityRecordPda(umi, {})
 
   // setup program
   const program = anchor.workspace
@@ -81,6 +98,8 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
   const nonceAccount = loadKeyPair(process.env.NONCE_ACCOUNT);
 
   let feeAccount = new anchor.web3.PublicKey(process.env.FEE_ACCOUNT);
+
+  let rentalCollectionMint = loadKeyPair(process.env.RENTAL_COLLECTION_MINT);
 
   // needs to have ata address (USDC) before assigning as fee Account
   let feeAta = await getOrCreateAssociatedTokenAccount(
@@ -130,39 +149,62 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
     }
   }
 
-  try {
-    let priorityIx = await getPriorityFeeIx(provider.connection);
+  let rentalCollectionMintSigner = createSignerFromKeypair(umi, {
+    secretKey: rentalCollectionMint.secretKey,
+    publicKey: publicKey(rentalCollectionMint.publicKey),
+  });
 
-    let ix = await program.methods
-      .initialize()
-      .accounts({
-        payer: centralizedAccount.publicKey,
-        centralAuthority: centralAuthority,
-        mintAccount: mintAccount,
-        systemProgram: anchor.web3.SystemProgram.programId,
-        rentalMerkleTree: rentalMerkleTree.publicKey,
-        feeAccount: feeAta.address,
-      })
-      .instruction();
+  // setup collection
 
-    let tx = new anchor.web3.Transaction();
+  let rentalCollectionData = await umi.rpc.getAccount(
+    rentalCollectionMintSigner.publicKey
+  );
 
-    tx.add(priorityIx);
-    tx.add(ix);
-
-    tx.recentBlockhash = await (
-      await provider.connection.getLatestBlockhash()
-    ).blockhash;
-
-    tx.feePayer = centralizedAccount.publicKey;
-    tx.sign(centralizedAccount);
-
-    let sx = await provider.connection.sendRawTransaction(tx.serialize());
-
-    await validateTxExecution(sx, umi);
-  } catch (err) {
-    console.log(err);
+  if (!rentalCollectionData.exists) {
+    await createNft(umi, {
+      mint: rentalCollectionMintSigner,
+      // authority: authoritySigner,
+      name: "My Collection NFT",
+      uri: "https://example.com/path/to/some/json/metadata.json",
+      sellerFeeBasisPoints: percentAmount(0, 2), // 9.99%
+      isCollection: true,
+      updateAuthority: authoritySigner.publicKey,
+    }).sendAndConfirm(umi);
   }
+
+  // try {
+  //   let priorityIx = await getPriorityFeeIx(provider.connection);
+
+  //   let ix = await program.methods
+  //     .initialize()
+  //     .accounts({
+  //       payer: centralizedAccount.publicKey,
+  //       centralAuthority: centralAuthority,
+  //       mintAccount: mintAccount,
+  //       systemProgram: anchor.web3.SystemProgram.programId,
+  //       rentalMerkleTree: rentalMerkleTree.publicKey,
+  //       feeAccount: feeAta.address,
+  //     })
+  //     .instruction();
+
+  //   let tx = new anchor.web3.Transaction();
+
+  //   tx.add(priorityIx);
+  //   tx.add(ix);
+
+  //   tx.recentBlockhash = await (
+  //     await provider.connection.getLatestBlockhash()
+  //   ).blockhash;
+
+  //   tx.feePayer = centralizedAccount.publicKey;
+  //   tx.sign(centralizedAccount);
+
+  //   let sx = await provider.connection.sendRawTransaction(tx.serialize());
+
+  //   await validateTxExecution(sx, umi);
+  // } catch (err) {
+  //   console.log(err);
+  // }
 
   let account = await umi.rpc.getAccount(publicKey(nonceAccount.publicKey));
 
@@ -206,4 +248,54 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
   }
 
   console.log("successfully initialized ");
+
+  const caller = loadKeyPair(
+    join(__dirname, "..", "tests/wallets/caller.json")
+  );
+
+  // test mint?
+
+  let ix = await mintToCollectionV1(umi, {
+    leafOwner: publicKey(caller.publicKey),
+    merkleTree: publicKey(rentalMerkleTree.publicKey),
+    collectionMint: publicKey(rentalCollectionMint.publicKey),
+    collectionAuthority: authoritySigner,
+    metadata: {
+      name: "My Compressed NFT",
+      uri: "https://example.com/my-cnft.json",
+      sellerFeeBasisPoints: 500, // 5%
+      collection: {
+        key: publicKey(rentalCollectionMint.publicKey),
+        verified: true,
+      },
+      creators: [
+        { address: umi.identity.publicKey, verified: false, share: 100 },
+      ],
+    },
+  }).buildWithLatestBlockhash(umi);
+
+  console.log(authoritySigner.publicKey);
+
+  console.log(rentalCollectionMint.publicKey);
+
+  // console.log(ix.message.accounts);
+  // ix.message.accounts
+
+  let [collectionMetadata] = findMetadataPda(umi, {
+    mint: publicKey(rentalCollectionMint.publicKey),
+  });
+
+  console.log(collectionMetadata);
+
+  let [collectionEdition] = findMasterEditionPda(umi, {
+    mint: publicKey(rentalCollectionMint.publicKey),
+  });
+
+  console.log(collectionEdition);
+
+  // await verifyCollectionV1(umi, {
+  //   metadata: collectionMetadata,
+  //   collectionMint: publicKey(rentalCollectionMint.publicKey),
+  //   authority: authoritySigner,
+  // }).sendAndConfirm(umi);
 })();
