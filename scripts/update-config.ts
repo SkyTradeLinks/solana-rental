@@ -54,7 +54,7 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
   let baseCost = null;
 
   if (parseFloat(process.env.NEW_PRICE)) {
-    baseCost = new anchor.BN(parseFloat(process.env.NEW_PRICE));
+    baseCost = parseFloat(process.env.NEW_PRICE);
   }
 
   let adminQuota = null;
