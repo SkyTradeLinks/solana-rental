@@ -198,7 +198,7 @@ pub fn handle_mint_rental_token<'info>(
     )?;
 
     let percent = (1 as f64 - ctx.accounts.central_authority.admin_quota) / nft_atas.len() as f64;
-    let quota = percent * f64::powf(10.0, decimals as f64);
+    let quota = percent * (expected_cost as f64);
     let quota = quota as u64;
 
     // Transfer To Land Owner
@@ -218,7 +218,7 @@ pub fn handle_mint_rental_token<'info>(
         )?;
     }
 
-    let fee_quota = ctx.accounts.central_authority.admin_quota * f64::powf(10.0, decimals as f64);
+    let fee_quota = ctx.accounts.central_authority.admin_quota * (expected_cost as f64);
     let fee_quota = fee_quota as u64;
 
     // Transfer To Fee Account
