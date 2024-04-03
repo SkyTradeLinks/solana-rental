@@ -6,17 +6,35 @@ import {
   ComputeBudgetProgram,
   Transaction,
   PublicKey,
+  TransactionInstruction,
+  Connection,
+  TransactionMessage,
+  VersionedTransaction,
 } from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
 import fs from "fs";
-import { TransactionWithMeta } from "@metaplex-foundation/umi";
+import {
+  Signer,
+  TransactionWithMeta,
+  Umi,
+  publicKey,
+} from "@metaplex-foundation/umi";
 import {
   MPL_BUBBLEGUM_PROGRAM_ID,
   SPL_NOOP_PROGRAM_ID,
 } from "@metaplex-foundation/mpl-bubblegum";
 import { deserializeChangeLogEventV1 } from "@solana/spl-account-compression";
 import { decode } from "@coral-xyz/anchor/dist/cjs/utils/bytes/bs58";
-
+import { NFTStorage, File } from "nft.storage";
+import {
+  createNft,
+  mplTokenMetadata,
+  MPL_TOKEN_METADATA_PROGRAM_ID,
+  fetchMetadataFromSeeds,
+  updateV1,
+  Metadata,
+  MetadataAccountDataArgs,
+} from "@metaplex-foundation/mpl-token-metadata";
 export const setupAirDrop = async (
   provider: anchor.AnchorProvider,
   accounts: anchor.web3.Keypair[]
@@ -35,7 +53,7 @@ export const setupAirDrop = async (
   }
 };
 
-export const loadKeyPair = (filename) => {
+export const loadKeyPair = (filename: string) => {
   const decodedKey = new Uint8Array(
     JSON.parse(fs.readFileSync(filename).toString())
   );
@@ -124,7 +142,7 @@ export const loadKeyPairV2 = (key) => {
   return keyPair;
 };
 
-export const validateTxExecution = async (signature, umi) => {
+export const validateTxExecution = async (signature: string, umi: Umi) => {
   let i = 0;
 
   while (i < 10) {
@@ -232,3 +250,72 @@ const compactHeader = (n: number) =>
  */
 const compactArraySize = (n: number, size: number) =>
   compactHeader(n) + n * size;
+
+export const pinFilesToIPFS = async (metadata) => {
+  if (!process.env.WEB_STORAGE_TOKEN) {
+    console.error(
+      "A token is needed. You can create one on https://nft.storage/"
+    );
+  }
+
+  const nftstorage = new NFTStorage({ token: process.env.WEB_STORAGE_TOKEN });
+
+  const jsonString = JSON.stringify(metadata);
+  const blob = new Blob([jsonString], { type: "application/json" });
+  const file = new File([blob], `0`, { type: "application/json" });
+
+  const cid = await nftstorage.storeBlob(file);
+
+  return cid;
+};
+
+export const sendTx = async (
+  ix: TransactionInstruction[],
+  payer: Keypair,
+  connection: Connection,
+  umi: Umi
+) => {
+  // Get the latest blockhash
+  let { blockhash } = await connection.getLatestBlockhash();
+
+  // Create the transaction message
+  const message = new TransactionMessage({
+    payerKey: payer.publicKey, // Public key of the account that will pay for the transaction
+    recentBlockhash: blockhash, // Latest blockhash
+    instructions: ix, // Instructions included in transaction
+  }).compileToV0Message();
+
+  // Create the versioned transaction using the message
+  const transaction = new VersionedTransaction(message);
+
+  // Sign the transaction
+  transaction.sign([payer]);
+
+  // Send the signed transaction to the network
+  const transactionSignature = await connection.sendTransaction(transaction);
+
+  await validateTxExecution(transactionSignature, umi);
+};
+
+export const updateCollectionMetadata = async (
+  umi: Umi,
+  collectionMint: PublicKey,
+  authoritySigner: Signer,
+  name?: string,
+  uri?: string
+) => {
+  const initialMetadata = await fetchMetadataFromSeeds(umi, {
+    mint: publicKey(collectionMint),
+  });
+
+  let newMetadata = {
+    ...(name != undefined ? { name } : {}),
+    ...(uri != undefined ? { uri } : {}),
+  };
+
+  await updateV1(umi, {
+    mint: publicKey(collectionMint),
+    authority: authoritySigner,
+    data: { ...initialMetadata, ...newMetadata },
+  }).sendAndConfirm(umi);
+};

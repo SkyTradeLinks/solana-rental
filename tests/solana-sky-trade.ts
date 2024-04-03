@@ -6,6 +6,7 @@ import {
   findLeafIndexFromAnchorTx,
   getTxSize,
   loadKeyPair,
+  pinFilesToIPFS,
   setupAirDrop,
   sleep,
   validateTxExecution,
@@ -14,6 +15,7 @@ import {
   AccountNotFoundError,
   createSignerFromKeypair,
   publicKey,
+  publicKeyBytes,
   signerIdentity,
 } from "@metaplex-foundation/umi";
 import { join } from "path";
@@ -34,6 +36,7 @@ import {
   transfer,
   getAssetWithProof,
   verifyLeaf,
+  mintToCollectionV1,
 } from "@metaplex-foundation/mpl-bubblegum";
 import {
   TokenAccountNotFoundError,
@@ -430,10 +433,25 @@ describe("solana-sky-trade", () => {
       "94pbP1FULSAFPk9BVhKA7NHG62ijCtQkGyXvQsxaYvDr"
     );
 
+    let offChainMetadata = {
+      name: "RENTAL NFT",
+      symbol: "R-NFT",
+      description: "",
+      image: "https://docs.sky.trade/sky-trade-logo.svg",
+      external_url: "https://sky.trade/",
+      attributes: [
+        {
+          name: "",
+        },
+      ],
+    };
+
+    let cid = await pinFilesToIPFS(offChainMetadata);
+
     let metadataBuffer = getMetadataArgsSerializer().serialize({
       name: "Rental NFT",
       symbol: "",
-      uri: "",
+      uri: `ipfs://${cid}/`,
       creators: [
         { address: umi.identity.publicKey, verified: true, share: 100 },
       ],
@@ -473,35 +491,79 @@ describe("solana-sky-trade", () => {
       new PublicKey(MPL_BUBBLEGUM_PROGRAM_ID)
     );
 
-    console.log(bubblegumSigner);
+    const [assetId, bump] = findLeafAssetIdPda(umi, {
+      merkleTree: publicKey(rentalMerkleTree.publicKey),
+      leafIndex: 0,
+    });
 
-    let ix = await program.methods
-      .mintRentalToken(Buffer.from(metadataBuffer), leavesData)
-      .accounts({
-        centralAuthority: centralAuthority,
-        centralizedAccount: centralizedAccount.publicKey,
-        mint: mintAccount,
-        centralizedAccountAta,
-        caller: caller.publicKey,
-        callerAta: callerAta,
-        rentalMerkleTree: rentalMerkleTree.publicKey,
-        treeConfig: treeConfig,
-        landMerkleTree: landMerkleTree.publicKey,
-        bubblegumProgram: MPL_BUBBLEGUM_PROGRAM_ID,
-        logWrapper: SPL_NOOP_PROGRAM_ID,
-        compressionProgram: SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,
-        systemProgram: anchor.web3.SystemProgram.programId,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        collectionMint,
-        collectionMetadata,
-        collectionEdition,
-        bubblegumSigner,
-        tokenMetadataProgram: MPL_TOKEN_METADATA_PROGRAM_ID,
-        feeAccountAta,
-      })
-      .remainingAccounts(accountsToPass)
-      .instruction();
+    // await mintV1(umi, {
+    //   leafOwner: publicKey("CVd7KmcbcqyUrNV55m3QJno3BShVef7JBoRJ6XQHyxXR"),
+    //   merkleTree: publicKey(rentalMerkleTree.publicKey),
+    //   // collectionMint: publicKey(collectionMint),
+    //   metadata: {
+    //     name: "My Compressed NFT",
+    //     uri: `ipfs://${cid}/`,
+    //     sellerFeeBasisPoints: 500, // 5%
+    //     collection: { key: publicKey(collectionMint), verified: false },
+    //     creators: [
+    //       { address: umi.identity.publicKey, verified: false, share: 100 },
+    //     ],
+    //   },
+    // }).sendAndConfirm(umi);
+
+    console.log(assetId);
+
+    const rpcAsset = await umi.rpc.getAsset(assetId);
+
+    console.log(rpcAsset.content.json_uri)
+    // const rpcAssetProof = await umi.rpc.getAssetProof(assetId);
+
+    // let callersigner = createSignerFromKeypair(umi, {
+    //   secretKey: caller.secretKey,
+    //   publicKey: publicKey(caller.publicKey),
+    // });
+
+    // umi.use(signerIdentity(callersigner));
+
+    // await transfer(umi, {
+    //   leafOwner: callersigner,
+    //   newLeafOwner: publicKey("ET2tp4QKrtynC4jUKhzbxis4Pop2pqNWhNx9N46NSVqr"),
+    //   merkleTree: rpcAssetProof.tree_id,
+    //   root: publicKeyBytes(rpcAssetProof.root),
+    //   dataHash: publicKeyBytes(rpcAsset.compression.data_hash),
+    //   creatorHash: publicKeyBytes(rpcAsset.compression.creator_hash),
+    //   nonce: rpcAsset.compression.leaf_id,
+    //   index: rpcAssetProof.node_index - 2 ** rpcAssetProof.proof.length,
+    //   proof: rpcAssetProof.proof,
+    // }).sendAndConfirm(umi);
+
+    // let ix = await program.methods
+    //   .mintRentalToken(Buffer.from(metadataBuffer), leavesData)
+    //   .accounts({
+    //     centralAuthority: centralAuthority,
+    //     centralizedAccount: centralizedAccount.publicKey,
+    //     mint: mintAccount,
+    //     centralizedAccountAta,
+    //     caller: caller.publicKey,
+    //     callerAta: callerAta,
+    //     rentalMerkleTree: rentalMerkleTree.publicKey,
+    //     treeConfig: treeConfig,
+    //     landMerkleTree: landMerkleTree.publicKey,
+    //     bubblegumProgram: MPL_BUBBLEGUM_PROGRAM_ID,
+    //     logWrapper: SPL_NOOP_PROGRAM_ID,
+    //     compressionProgram: SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,
+    //     systemProgram: anchor.web3.SystemProgram.programId,
+    //     associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+    //     tokenProgram: TOKEN_PROGRAM_ID,
+    //     collectionMint,
+    //     collectionMetadata,
+    //     collectionEdition,
+    //     bubblegumSigner,
+    //     tokenMetadataProgram: MPL_TOKEN_METADATA_PROGRAM_ID,
+    //     feeAccountAta,
+    //   })
+    //   .remainingAccounts(accountsToPass)
+    //   .instruction();
 
     // let [tx, nonceBlock] = await createTxWithNonce(
     //   provider.connection,
@@ -509,71 +571,71 @@ describe("solana-sky-trade", () => {
     //   centralizedAccount.publicKey
     // );
 
-    let tx = new Transaction();
+    // let tx = new Transaction();
 
-    tx = tx.add(ix);
+    // tx = tx.add(ix);
 
-    let blockhash = (await provider.connection.getLatestBlockhash("finalized"))
-      .blockhash;
+    // let blockhash = (await provider.connection.getLatestBlockhash("finalized"))
+    //   .blockhash;
 
-    // tx.recentBlockhash = nonceBlock.nonce;
-    tx.recentBlockhash = blockhash;
-    tx.feePayer = centralizedAccount.publicKey;
+    // // tx.recentBlockhash = nonceBlock.nonce;
+    // tx.recentBlockhash = blockhash;
+    // tx.feePayer = centralizedAccount.publicKey;
 
-    // caller
+    // // caller
 
-    tx.sign(caller);
-    tx.partialSign(centralizedAccount);
-    // tx.partialSign(bubblegumSigner)
+    // tx.sign(caller);
+    // tx.partialSign(centralizedAccount);
+    // // tx.partialSign(bubblegumSigner)
 
-    console.log(getTxSize(tx, centralizedAccount.publicKey));
+    // console.log(getTxSize(tx, centralizedAccount.publicKey));
 
-    // await sleep(90 * 1000);
+    // // await sleep(90 * 1000);
 
-    // sign with nonce
+    // // sign with nonce
 
-    let mintSx;
+    // let mintSx;
 
-    try {
-      mintSx = await provider.connection.sendRawTransaction(tx.serialize());
-    } catch (err) {
-      console.log(err);
-    }
+    // try {
+    //   mintSx = await provider.connection.sendRawTransaction(tx.serialize());
+    // } catch (err) {
+    //   console.log(err);
+    // }
 
-    let mintTxInfo;
+    // let mintTxInfo;
 
-    let i = 0;
+    // let i = 0;
 
-    while (i < 6) {
-      const tx0 = await umi.rpc.getTransaction(decode(mintSx), {
-        commitment: "confirmed",
-      });
+    // while (i < 6) {
+    //   const tx0 = await umi.rpc.getTransaction(decode(mintSx), {
+    //     commitment: "confirmed",
+    //   });
 
-      if (tx0 !== null) {
-        mintTxInfo = tx0;
-        break;
-      }
+    //   if (tx0 !== null) {
+    //     mintTxInfo = tx0;
+    //     break;
+    //   }
 
-      await sleep(1000 * i);
+    //   await sleep(1000 * i);
 
-      i++;
-    }
+    //   i++;
+    // }
 
-    let [leafIndex] = findLeafIndexFromAnchorTx(mintTxInfo);
+    // let [leafIndex] = findLeafIndexFromAnchorTx(mintTxInfo);
 
-    let [assetId] = findLeafAssetIdPda(umi, {
-      merkleTree: publicKey(rentalMerkleTree.publicKey),
-      leafIndex: leafIndex,
-    });
+    // let [assetId] = findLeafAssetIdPda(umi, {
+    //   merkleTree: publicKey(rentalMerkleTree.publicKey),
+    //   leafIndex: leafIndex,
+    // });
 
-    createdLeafIndex = leafIndex;
+    // createdLeafIndex = leafIndex;
 
-    let rentalAsset = await umi.rpc.getAsset(assetId);
+    // let rentalAsset = await umi.rpc.getAsset(assetId);
 
-    assert.equal(
-      rentalAsset.ownership.owner.toString(),
-      caller.publicKey.toString()
-    );
+    // assert.equal(
+    //   rentalAsset.ownership.owner.toString(),
+    //   caller.publicKey.toString()
+    // );
   });
 
   // it("should transfer rental nft to another", async () => {

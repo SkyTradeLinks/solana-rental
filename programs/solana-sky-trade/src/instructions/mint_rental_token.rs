@@ -49,7 +49,7 @@ pub struct MintRentalTokenPayload<'info> {
     pub tree_config: UncheckedAccount<'info>,
 
     /// CHECK: This account is checked in the instruction
-    pub land_merkle_tree: UncheckedAccount<'info>,
+    // pub land_merkle_tree: UncheckedAccount<'info>,
 
     /// CHECK: This account is checked in the instruction
     pub collection_mint: UncheckedAccount<'info>,

@@ -2,12 +2,15 @@ import * as anchor from "@coral-xyz/anchor";
 import {
   getPriorityFeeIx,
   loadKeyPair,
-  loadKeyPairV2,
+  pinFilesToIPFS,
+  sendTx,
   validateTxExecution,
 } from "../helper";
 import {
+  AddressLookupTableProgram,
   Connection,
   NONCE_ACCOUNT_LENGTH,
+  PublicKey,
   SystemProgram,
 } from "@solana/web3.js";
 import { SolanaSkyTrade } from "../target/types/solana_sky_trade";
@@ -16,6 +19,7 @@ import {
   createTree,
   fetchMerkleTree,
   mplBubblegum,
+  MPL_BUBBLEGUM_PROGRAM_ID,
 } from "@metaplex-foundation/mpl-bubblegum";
 import {
   AccountNotFoundError,
@@ -25,10 +29,15 @@ import {
   signerIdentity,
 } from "@metaplex-foundation/umi";
 import "dotenv/config";
-import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
+import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  TOKEN_PROGRAM_ID,
+  getOrCreateAssociatedTokenAccount,
+} from "@solana/spl-token";
 import {
   createNft,
   mplTokenMetadata,
+  MPL_TOKEN_METADATA_PROGRAM_ID,
 } from "@metaplex-foundation/mpl-token-metadata";
 
 (async () => {
@@ -153,20 +162,27 @@ import {
   });
 
   // setup collection
-
   let rentalCollectionData = await umi.rpc.getAccount(
     rentalCollectionMintSigner.publicKey
   );
 
-  // collection nft needs to be in this format (to have picture associated)
-  // https://raw.githubusercontent.com/687c/solana-nft-native-client/main/metadata.json
-
   if (!rentalCollectionData.exists) {
+    let offChainMetadata = {
+      name: "RENTAL Collection",
+      symbol: "R-NFT",
+      description: "",
+      image: "https://docs.sky.trade/logo-square.jpg",
+      external_url: "https://sky.trade/",
+      attributes: [],
+    };
+
+    let cid = await pinFilesToIPFS(offChainMetadata);
+
     await createNft(umi, {
       mint: rentalCollectionMintSigner,
       authority: authoritySigner,
       name: "RENTAL Collection",
-      uri: "https://example.com/path/to/some/json/metadata.json",
+      uri: `https://${cid}.ipfs.nftstorage.link/`,
       sellerFeeBasisPoints: percentAmount(0, 2), // 9.99%
       isCollection: true,
       updateAuthority: authoritySigner.publicKey,
@@ -178,11 +194,22 @@ import {
   );
 
   if (!landCollectionData.exists) {
+    let offChainMetadata = {
+      name: "LAND Collection",
+      symbol: "L-NFT",
+      description: "",
+      image: "https://docs.sky.trade/logo-square.jpg",
+      external_url: "https://sky.trade/",
+      attributes: [],
+    };
+
+    let cid = await pinFilesToIPFS(offChainMetadata);
+
     await createNft(umi, {
       mint: landCollectionMintSigner,
       authority: authoritySigner,
       name: "LAND Collection",
-      uri: "https://example.com/path/to/some/json/metadata.json",
+      uri: `https://${cid}.ipfs.nftstorage.link/`,
       sellerFeeBasisPoints: percentAmount(0, 2), // 0.00%
       isCollection: true,
       updateAuthority: authoritySigner.publicKey,
@@ -204,21 +231,12 @@ import {
       })
       .instruction();
 
-    let tx = new anchor.web3.Transaction();
-
-    tx.add(priorityIx);
-    tx.add(ix);
-
-    tx.recentBlockhash = await (
-      await provider.connection.getLatestBlockhash()
-    ).blockhash;
-
-    tx.feePayer = centralizedAccount.publicKey;
-    tx.sign(centralizedAccount);
-
-    let sx = await provider.connection.sendRawTransaction(tx.serialize());
-
-    await validateTxExecution(sx, umi);
+    await sendTx(
+      [priorityIx, ix],
+      centralizedAccount,
+      provider.connection,
+      umi
+    );
   } catch (err) {
     console.log(err);
   }
@@ -262,6 +280,48 @@ import {
     if (txInfo != null) {
       // console.log(txInfo);
     }
+  }
+
+  let lookupTableAddress = new PublicKey(process.env.LOOKUP_TABLE);
+
+  const lookupTableAccount = (
+    await connection.getAddressLookupTable(lookupTableAddress)
+  ).value;
+
+  // noop must not be in a lookup table
+  let addressesToAdd = [
+    centralizedAccount.publicKey,
+    centralAuthority,
+    rentalMerkleTree.publicKey,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+    new PublicKey(MPL_TOKEN_METADATA_PROGRAM_ID),
+    new PublicKey(MPL_BUBBLEGUM_PROGRAM_ID),
+    SystemProgram.programId,
+  ];
+
+  addressesToAdd = addressesToAdd.filter((el) => {
+    const isInLookupTable = lookupTableAccount.state.addresses.some(
+      (innerEl) => innerEl.toString() === el.toString()
+    );
+
+    return !isInLookupTable;
+  });
+
+  if (addressesToAdd.length > 0) {
+    const extendInstruction = AddressLookupTableProgram.extendLookupTable({
+      payer: centralizedAccount.publicKey,
+      authority: centralizedAccount.publicKey,
+      lookupTable: lookupTableAddress,
+      addresses: addressesToAdd,
+    });
+
+    await sendTx(
+      [extendInstruction],
+      centralizedAccount,
+      provider.connection,
+      umi
+    );
   }
 
   console.log("successfully initialized ");
