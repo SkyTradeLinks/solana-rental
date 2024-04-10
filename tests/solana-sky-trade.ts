@@ -439,11 +439,9 @@ describe("solana-sky-trade", () => {
       description: "",
       image: "https://docs.sky.trade/sky-trade-logo.svg",
       external_url: "https://sky.trade/",
-      attributes: [
-        {
-          name: "",
-        },
-      ],
+      metadata:{
+        
+      }
     };
 
     let cid = await pinFilesToIPFS(offChainMetadata);
@@ -496,20 +494,20 @@ describe("solana-sky-trade", () => {
       leafIndex: 0,
     });
 
-    // await mintV1(umi, {
-    //   leafOwner: publicKey("CVd7KmcbcqyUrNV55m3QJno3BShVef7JBoRJ6XQHyxXR"),
-    //   merkleTree: publicKey(rentalMerkleTree.publicKey),
-    //   // collectionMint: publicKey(collectionMint),
-    //   metadata: {
-    //     name: "My Compressed NFT",
-    //     uri: `ipfs://${cid}/`,
-    //     sellerFeeBasisPoints: 500, // 5%
-    //     collection: { key: publicKey(collectionMint), verified: false },
-    //     creators: [
-    //       { address: umi.identity.publicKey, verified: false, share: 100 },
-    //     ],
-    //   },
-    // }).sendAndConfirm(umi);
+    await mintV1(umi, {
+      leafOwner: publicKey("CVd7KmcbcqyUrNV55m3QJno3BShVef7JBoRJ6XQHyxXR"),
+      merkleTree: publicKey(rentalMerkleTree.publicKey),
+      // collectionMint: publicKey(collectionMint),
+      metadata: {
+        name: "My Compressed NFT",
+        uri: `ipfs://${cid}/`,
+        sellerFeeBasisPoints: 500, // 5%
+        collection: { key: publicKey(collectionMint), verified: false },
+        creators: [
+          { address: umi.identity.publicKey, verified: false, share: 100 },
+        ],
+      },
+    }).sendAndConfirm(umi);
 
     console.log(assetId);
 
