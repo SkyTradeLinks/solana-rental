@@ -90,7 +90,6 @@ import {
   );
 
   // create merkle trees
-
   const rentalMerkleTree = loadKeyPair(process.env.RENTAL_MERKLE_TREE);
 
   const landMerkleTree = loadKeyPair(process.env.LAND_MERKLE_TREE);
@@ -132,14 +131,14 @@ import {
   }
 
   try {
-    await fetchMerkleTree(umi, publicKey(landMerkleTree.publicKey));
+    await fetchMerkleTree(umi, publicKey(rentalMerkleTree.publicKey));
   } catch (err) {
     if (err.name == AccountNotFoundError.name) {
       await (
         await createTree(umi, {
           merkleTree: createSignerFromKeypair(umi, {
-            secretKey: landMerkleTree.secretKey,
-            publicKey: publicKey(landMerkleTree.publicKey),
+            secretKey: rentalMerkleTree.secretKey,
+            publicKey: publicKey(rentalMerkleTree.publicKey),
           }),
           maxDepth: merkleTreeDepth,
           maxBufferSize: merkleTreeBufferSize,
@@ -182,7 +181,7 @@ import {
       mint: rentalCollectionMintSigner,
       authority: authoritySigner,
       name: "RENTAL Collection",
-      uri: `https://${cid}.ipfs.nftstorage.link/`,
+      uri: `https://gateway.pinata.cloud/ipfs/${cid}`,
       sellerFeeBasisPoints: percentAmount(0, 2), // 9.99%
       isCollection: true,
       updateAuthority: authoritySigner.publicKey,
@@ -209,7 +208,7 @@ import {
       mint: landCollectionMintSigner,
       authority: authoritySigner,
       name: "LAND Collection",
-      uri: `https://${cid}.ipfs.nftstorage.link/`,
+      uri: `https://gateway.pinata.cloud/ipfs/${cid}`,
       sellerFeeBasisPoints: percentAmount(0, 2), // 0.00%
       isCollection: true,
       updateAuthority: authoritySigner.publicKey,

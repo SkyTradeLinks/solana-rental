@@ -25,16 +25,12 @@ import {
 } from "@metaplex-foundation/mpl-bubblegum";
 import { deserializeChangeLogEventV1 } from "@solana/spl-account-compression";
 import { decode } from "@coral-xyz/anchor/dist/cjs/utils/bytes/bs58";
-import { NFTStorage, File } from "nft.storage";
 import {
-  createNft,
-  mplTokenMetadata,
-  MPL_TOKEN_METADATA_PROGRAM_ID,
   fetchMetadataFromSeeds,
   updateV1,
-  Metadata,
-  MetadataAccountDataArgs,
 } from "@metaplex-foundation/mpl-token-metadata";
+import axios from "axios";
+
 export const setupAirDrop = async (
   provider: anchor.AnchorProvider,
   accounts: anchor.web3.Keypair[]
@@ -258,13 +254,25 @@ export const pinFilesToIPFS = async (metadata) => {
     );
   }
 
-  const nftstorage = new NFTStorage({ token: process.env.WEB_STORAGE_TOKEN });
+  const data = JSON.stringify({
+    pinataContent: metadata,
+    pinataMetadata: {
+      name: "metadata.json",
+    },
+  });
 
-  const jsonString = JSON.stringify(metadata);
-  const blob = new Blob([jsonString], { type: "application/json" });
-  const file = new File([blob], `0`, { type: "application/json" });
+  const res = await axios.post(
+    "https://api.pinata.cloud/pinning/pinJSONToIPFS",
+    data,
+    {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.WEB_STORAGE_TOKEN}`,
+      },
+    }
+  );
 
-  const cid = await nftstorage.storeBlob(file);
+  const cid = res.data["IpfsHash"];
 
   return cid;
 };

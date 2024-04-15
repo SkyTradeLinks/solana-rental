@@ -125,5 +125,7 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
 
   await validateTxExecution(sx, umi);
 
-  console.log("successfully changed config");
+  console.log(
+    `successfully changed config, view tx: https://explorer.solana.com/tx/${sx}`
+  );
 })();
