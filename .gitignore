@@ -11,5 +11,7 @@ test-ledger
 **/wallets
 
 .env
+.nyc_output
+coverage
 
 **/keys

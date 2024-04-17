@@ -139,7 +139,7 @@ export const loadKeyPairV2 = (key) => {
 
   let keyPair = Keypair.fromSecretKey(decodedKey);
 
-  return keyPair;
+  return Keypair;
 };
 
 export const validateTxExecution = async (signature: string, umi: Umi) => {

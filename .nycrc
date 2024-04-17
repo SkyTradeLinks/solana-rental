@@ -1,0 +1,15 @@
+{
+  "extends": "@istanbuljs/nyc-config-typescript",
+  "all": true,
+  "reporter": ["text-summary", "lcov"],
+  "exclude": [
+    "**/*.spec.ts",
+    "**/node_modules/**",
+    "**/scripts/**",
+    "**/target/**",
+    "**/migrations/**",
+    "**/coverage/**",
+    "**/helper.ts",
+    "**/jest.config.ts"
+  ]
+}
