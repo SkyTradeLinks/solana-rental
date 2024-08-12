@@ -192,6 +192,7 @@ import {
     landCollectionMintSigner.publicKey
   );
 
+
   if (!landCollectionData.exists) {
     let offChainMetadata = {
       name: "LAND Collection",
@@ -222,9 +223,9 @@ import {
       .initialize()
       .accounts({
         payer: centralizedAccount.publicKey,
-        centralAuthority: centralAuthority,
+        // centralAuthority: centralAuthority,
         mintAccount: mintAccount,
-        systemProgram: anchor.web3.SystemProgram.programId,
+        // systemProgram: anchor.web3.SystemProgram.programId,
         rentalMerkleTree: rentalMerkleTree.publicKey,
         feeAccount: feeAta.address,
       })
