@@ -226,7 +226,6 @@ import {
         // centralAuthority: centralAuthority,
         mintAccount: mintAccount,
         // systemProgram: anchor.web3.SystemProgram.programId,
-        rentalMerkleTree: rentalMerkleTree.publicKey,
         feeAccount: feeAta.address,
       })
       .instruction();
