@@ -102,9 +102,7 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
       feeAccount,
     })
     .accounts({
-      centralAuthority: centralAuthority,
       centralizedAccount: centralizedAccount.publicKey,
-      systemProgram: anchor.web3.SystemProgram.programId,
       mintAccount: mintAccount,
     })
     .instruction();
