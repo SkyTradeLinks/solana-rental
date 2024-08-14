@@ -76,6 +76,7 @@ import {
 } from "@metaplex-foundation/mpl-token-metadata";
 import "dotenv/config"
 import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
+import { associatedAddress } from "@coral-xyz/anchor/dist/cjs/utils/token";
 describe("solana-sky-trade", () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
@@ -530,23 +531,41 @@ console.log("----------------------------")
 
 
     umi.use(signerIdentity(callersigner));
+
+    const [rent_escrow, rent_escrow_bump] = await PublicKey.findProgramAddressSync(
+      [Buffer.from("rent"), caller.publicKey.toBytes()],
+      program.programId
+    );
+
+    const rent_escrow_Ata = associatedAddress({ mint: mintAccount, owner: rent_escrow });
+
+
      let ix = await program.methods
       .mintRentalToken(Buffer.from(metadataBuffer), leavesData)
-      .accounts({
+      .accountsStrict({
+        centralAuthority: centralAuthority,
         centralizedAccount: centralizedAccount.publicKey,
-        mint: mintAccount,
-        caller: caller.publicKey,
-        rentalMerkleTree: rentalMerkleTree.publicKey,
-        treeConfig: treeConfig,
-        bubblegumProgram: MPL_BUBBLEGUM_PROGRAM_ID,
-        logWrapper: SPL_NOOP_PROGRAM_ID,
-        compressionProgram: SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,
-        collectionMint,
-        collectionMetadata,
-        collectionEdition,
-        bubblegumSigner,
-        tokenMetadataProgram: MPL_TOKEN_METADATA_PROGRAM_ID,
-        feeAccountAta:feeAccountAta.address,
+           mint: mintAccount,
+           centralizedAccountAta,
+           caller: caller.publicKey,
+           callerAta: callerAta,
+           rentalMerkleTree: rentalMerkleTree.publicKey,
+           treeConfig: treeConfig,
+           collectionMint,
+           collectionEdition,
+           collectionMetadata,
+           bubblegumSigner,
+           feeAccountAta:feeAccountAta.address,
+           bubblegumProgram: MPL_BUBBLEGUM_PROGRAM_ID,
+           logWrapper: SPL_NOOP_PROGRAM_ID,
+           compressionProgram: SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,
+           systemProgram: anchor.web3.SystemProgram.programId,
+           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+           tokenProgram: TOKEN_PROGRAM_ID,        
+         tokenMetadataProgram: MPL_TOKEN_METADATA_PROGRAM_ID,
+         rentEscrow:rent_escrow,
+         rentEscrowAta:rent_escrow_Ata
+        
       })
       .remainingAccounts(accountsToPass)
       .instruction();

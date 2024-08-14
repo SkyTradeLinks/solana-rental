@@ -4,7 +4,7 @@ use anchor_spl::{
     token::{transfer_checked, Mint, Token, TokenAccount, TransferChecked},
 };
 
-use mpl_bubblegum::{instructions::MintToCollectionV1CpiBuilder, types::MetadataArgs};
+use mpl_bubblegum::{instructions::MintToCollectionV1CpiBuilder, types::MetadataArgs,utils::get_asset_id};
 
 use crate::{errors::*, state::*, LeafData};
 
@@ -82,12 +82,33 @@ pub struct MintRentalTokenPayload<'info> {
 
     /// CHECK: This account is checked in the instruction
     pub token_metadata_program: UncheckedAccount<'info>,
+
+    #[account(
+        init_if_needed,
+        payer=centralized_account,
+        space=RentEscrow::MAX_SIZE,
+        seeds=[
+            RENT_ESCROW_PREFIX.as_bytes(),
+            caller.key().as_ref(),
+        ],
+        bump,
+
+    )]
+    rent_escrow:Account<'info,RentEscrow>,
+
+    #[account(init_if_needed,
+        associated_token::mint = mint,
+        associated_token::authority = rent_escrow,
+        payer = centralized_account)]
+    
+    rent_escrow_ata: Account<'info, TokenAccount>,
 }
 
 pub fn handle_mint_rental_token<'info>(
     ctx: Context<'_, '_, '_, 'info, MintRentalTokenPayload<'info>>,
     mint_metadata_args: Vec<u8>,
     leaves_data: Vec<LeafData>,
+    
 ) -> Result<()> {
     // let bump_seed = [ctx.bumps.central_authority];
     // let signer_seeds: &[&[&[u8]]] = &[&["central_authority".as_bytes(), &bump_seed.as_ref()]];
@@ -128,7 +149,7 @@ pub fn handle_mint_rental_token<'info>(
     if leaves_data.len() == 0 || leaves_data.len() != length {
         return err!(MyError::InvalidLandNFTData);
     }
-
+    
     for index in 0..length {
         let land_owner = next_account_info(accounts)?;
         let land_owner_ata = next_account_info(accounts)?;
@@ -183,7 +204,7 @@ pub fn handle_mint_rental_token<'info>(
 
     let decimals = ctx.accounts.mint.decimals;
 
-    transfer_checked(
+  /*   transfer_checked(
         CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
             TransferChecked {
@@ -195,14 +216,14 @@ pub fn handle_mint_rental_token<'info>(
         ),
         expected_cost,
         decimals,
-    )?;
+    )?; */
 
     let percent = (1 as f64 - ctx.accounts.central_authority.admin_quota) / nft_atas.len() as f64;
     let quota = percent * (expected_cost as f64);
     let quota = quota as u64;
 
     // Transfer To Land Owner
-    for ata in nft_atas.iter() {
+   /*  for ata in nft_atas.iter() {
         transfer_checked(
             CpiContext::new(
                 ctx.accounts.token_program.to_account_info(),
@@ -216,13 +237,20 @@ pub fn handle_mint_rental_token<'info>(
             quota,
             decimals,
         )?;
-    }
-
+    } */
+    let accounts = &mut ctx.remaining_accounts.iter();
+    let land_owner=next_account_info(accounts).unwrap();
     let fee_quota = ctx.accounts.central_authority.admin_quota * (expected_cost as f64);
     let fee_quota = fee_quota as u64;
+    let rental_escrow=&mut ctx.accounts.rent_escrow;
+    rental_escrow.caller=ctx.accounts.caller.key();
+    rental_escrow.landowner=land_owner.key();
+    rental_escrow.rent=quota;
+    rental_escrow.fee=fee_quota;
+    rental_escrow.rent_escrow_bump_seed=[255];
 
     // Transfer To Fee Account
-    transfer_checked(
+ /*    transfer_checked(
         CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
             TransferChecked {
@@ -234,7 +262,22 @@ pub fn handle_mint_rental_token<'info>(
         ),
         fee_quota,
         decimals,
-    )?;
+    )?; */
+
+        //transfer to escrow
+         transfer_checked(
+        CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            TransferChecked {
+                from: ctx.accounts.caller_ata.to_account_info(),
+                mint: ctx.accounts.mint.to_account_info(),
+                to: ctx.accounts.rent_escrow_ata.to_account_info(),
+                authority: ctx.accounts.caller.to_account_info(),
+            },
+        ),
+        expected_cost,
+        decimals,
+    )?; 
 
     let mint_metadata = MetadataArgs::try_from_slice(mint_metadata_args.as_slice())?;
 
