@@ -39,8 +39,8 @@ pub fn handle_update_config(
 
     match payload.base_cost {
         Some(value) => {
-            ctx.accounts.central_authority.base_cost = (
-                value * f64::powf(10.0, ctx.accounts.mint_account.decimals.into())) as u64;
+            ctx.accounts.central_authority.base_cost =
+                (value * f64::powf(10.0, ctx.accounts.mint_account.decimals.into())) as u64;
         }
         None => {}
     }
@@ -48,13 +48,6 @@ pub fn handle_update_config(
     match payload.admin_quota {
         Some(value) => {
             ctx.accounts.central_authority.admin_quota = value;
-        }
-        None => {}
-    }
-
-    match payload.merkle_tree_address {
-        Some(value) => {
-            ctx.accounts.central_authority.merkle_tree_address = value;
         }
         None => {}
     }

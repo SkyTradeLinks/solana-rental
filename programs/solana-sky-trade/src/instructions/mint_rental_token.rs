@@ -97,10 +97,6 @@ pub fn handle_mint_rental_token<'info>(
         return err!(MyError::InvalidAuthority);
     }
 
-    if ctx.accounts.central_authority.merkle_tree_address != ctx.accounts.rental_merkle_tree.key() {
-        return err!(MyError::InvalidRentalAddressPassed);
-    }
-
     let expected_fee_ata = get_associated_token_address(
         &ctx.accounts.central_authority.fee_account,
         &ctx.accounts.mint.key(),
