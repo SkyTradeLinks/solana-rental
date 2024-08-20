@@ -225,11 +225,11 @@ import {
 
     let ix = await program.methods
       .initialize()
-      .accounts({
+      .accountsStrict({
         payer: centralizedAccount.publicKey,
-        // centralAuthority: centralAuthority,
+         centralAuthority: centralAuthority,
         mintAccount: mintAccount,
-        // systemProgram: anchor.web3.SystemProgram.programId,
+         systemProgram: anchor.web3.SystemProgram.programId,
         rentalMerkleTree: rentalMerkleTree.publicKey,
         feeAccount: feeAta.address,
       })

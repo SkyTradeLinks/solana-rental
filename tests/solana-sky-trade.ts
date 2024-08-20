@@ -533,13 +533,22 @@ console.log("----------------------------")
     umi.use(signerIdentity(callersigner));
 
     const [rent_escrow, rent_escrow_bump] = await PublicKey.findProgramAddressSync(
-      [Buffer.from("rent"), caller.publicKey.toBytes()],
+      [Buffer.from("rental1"), caller.publicKey.toBytes()],
       program.programId
     );
 
+    console.log({rent_escrow})
+
     const rent_escrow_Ata = associatedAddress({ mint: mintAccount, owner: rent_escrow });
 
+    const seeds = []
+    const [myPda, _bump] = anchor.web3.PublicKey.findProgramAddressSync(seeds, program.programId);
 
+    console.log("the storage account address is", myPda.toBase58());
+
+
+
+    console.log({rent_escrow_Ata})
      let ix = await program.methods
       .mintRentalToken(Buffer.from(metadataBuffer), leavesData)
       .accountsStrict({
@@ -563,11 +572,12 @@ console.log("----------------------------")
            associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
            tokenProgram: TOKEN_PROGRAM_ID,        
          tokenMetadataProgram: MPL_TOKEN_METADATA_PROGRAM_ID,
+         //myPda:myPda,
          rentEscrow:rent_escrow,
-         rentEscrowAta:rent_escrow_Ata
+         //rentEscrowAta:rent_escrow_Ata
         
       })
-      .remainingAccounts(accountsToPass)
+      //.remainingAccounts(accountsToPass)
       .instruction();
 
     let [tx, nonceBlock] = await createTxWithNonce(

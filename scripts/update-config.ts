@@ -14,6 +14,8 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
 
 (async () => {
   // input private key here
+  console.log("centralized acc ",process.env.CENTRALIZED_ACCOUNT)
+
   let centralizedAccount = loadKeyPair(process.env.CENTRALIZED_ACCOUNT);
 
   const wallet = new anchor.Wallet(centralizedAccount);
@@ -92,6 +94,11 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
   }
 
   let priorityIx = await getPriorityFeeIx(provider.connection);
+  const seeds = [centralizedAccount.publicKey.toBytes()]
+  const [myPda, _bump] = anchor.web3.PublicKey.findProgramAddressSync(seeds, program.programId);
+
+  console.log("the storage account address is", myPda.toBase58());
+
 
   let ix = await program.methods
     .updateConfig({
@@ -101,9 +108,13 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
       multiplier: null,
       feeAccount,
     })
-    .accounts({
+    .accountsStrict({
+      centralAuthority,
       centralizedAccount: centralizedAccount.publicKey,
       mintAccount: mintAccount,
+      systemProgram: anchor.web3.SystemProgram.programId,
+      myPda
+      
     })
     .instruction();
 

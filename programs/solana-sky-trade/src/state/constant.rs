@@ -1,6 +1,6 @@
 use anchor_lang::prelude::Pubkey;
 
-pub const RENT_ESCROW_PREFIX: &str = "rent";
+pub const RENT_ESCROW_PREFIX: &str = "rental1";
 
 
 #[derive(Clone)]
