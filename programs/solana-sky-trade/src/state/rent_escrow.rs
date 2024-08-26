@@ -1,20 +1,22 @@
 use anchor_lang::prelude::*;
 
-use crate::constant::RENT_ESCROW_PREFIX;
-
 #[account]
 pub struct RentEscrow {
-    
+    pub land_asset_id:Pubkey,
+    pub creation_time:String,
+    pub expected_cost:u64,
+    pub fee_quota:u64,
+    pub escrow_bump:[u8; 1]
 }
 
 impl RentEscrow {
-    pub const MAX_SIZE:usize=8;
+    pub const MAX_SIZE: usize = 32+24+1;
     
-   /*  pub fn rent_escrow_seeds(&self)-> [&[u8];2] {
-         [
-            RENT_ESCROW_PREFIX.as_bytes(),
-            &self.caller.as_ref(),
+      pub fn escrow_seeds(&self)->[&[u8];3]{
+        [
+            &self.land_asset_id.as_ref(),
+            &self.creation_time.as_ref(),
+            &self.escrow_bump
         ]
-    } */
-
+    }  
 }

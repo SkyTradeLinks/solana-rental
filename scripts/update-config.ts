@@ -95,9 +95,9 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
 
   let priorityIx = await getPriorityFeeIx(provider.connection);
   const seeds = [centralizedAccount.publicKey.toBytes()]
-  const [myPda, _bump] = anchor.web3.PublicKey.findProgramAddressSync(seeds, program.programId);
+   const [myPda, _bump] = anchor.web3.PublicKey.findProgramAddressSync(seeds, program.programId);
 
-  console.log("the storage account address is", myPda.toBase58());
+  console.log("the storage account address is", myPda.toBase58()); 
 
 
   let ix = await program.methods

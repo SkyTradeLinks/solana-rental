@@ -3,12 +3,14 @@ use anchor_spl::{
     associated_token::{create, get_associated_token_address, AssociatedToken, Create},
     token::{transfer_checked, Mint, Token, TokenAccount, TransferChecked},
 };
+use spl_associated_token_account::instruction;
 use std::mem::size_of;
 use mpl_bubblegum::{instructions::MintToCollectionV1CpiBuilder, types::MetadataArgs,utils::get_asset_id};
 
 use crate::{errors::*, state::*, LeafData};
 
 #[derive(Accounts)]
+#[instruction(land_asset_id:Pubkey,creation_time:String)]
 pub struct MintRentalTokenPayload<'info> {
     #[account(
         seeds = [b"central_authority"],
@@ -22,23 +24,19 @@ pub struct MintRentalTokenPayload<'info> {
     pub centralized_account: Signer<'info>,
 
      #[account(
-        init_if_needed,
-        payer = centralized_account,
         associated_token::mint = mint,
         associated_token::authority = centralized_account
     )]
-    pub centralized_account_ata: Box<Account<'info, TokenAccount>>, 
+    pub centralized_account_ata: Account<'info, TokenAccount>, 
 
     #[account(mut)]
     pub caller: Signer<'info>,
 
-     #[account(
-        init_if_needed,
-        payer = caller,
+       #[account(mut,
         associated_token::mint = mint,
         associated_token::authority = caller
-    )]
-    pub caller_ata: Box<Account<'info, TokenAccount>>, 
+    )] 
+    pub caller_ata: Box<Account<'info, TokenAccount>>,  
 
     /// CHECK: This account is checked in the instruction
      #[account(mut)]
@@ -49,7 +47,7 @@ pub struct MintRentalTokenPayload<'info> {
     pub tree_config: UncheckedAccount<'info>,
 
     /// CHECK: This account is checked in the instruction
-    // pub land_merkle_tree: UncheckedAccount<'info>,
+     pub land_merkle_tree: UncheckedAccount<'info>,
 
     /// CHECK: This account is checked in the instruction
     pub collection_mint: UncheckedAccount<'info>,
@@ -65,8 +63,6 @@ pub struct MintRentalTokenPayload<'info> {
     pub bubblegum_signer: UncheckedAccount<'info>,
 
     /// CHECK: This account is checked in the instruction
-    #[account(mut)]
-    pub fee_account_ata: UncheckedAccount<'info>,
 
     /// CHECK: This account is checked in the instruction
     pub bubblegum_program: UncheckedAccount<'info>,
@@ -83,39 +79,42 @@ pub struct MintRentalTokenPayload<'info> {
     /// CHECK: This account is checked in the instruction
     pub token_metadata_program: UncheckedAccount<'info>,
 
-        #[account(
+    #[account(
         init,
         payer=centralized_account,
-        space=8 as usize,
+        space=RentEscrow::MAX_SIZE +usize::from(4+creation_time.len()),
         seeds=[
-            RENT_ESCROW_PREFIX.as_bytes(),
-            caller.key().as_ref(),
+            land_asset_id.key().as_ref(),
+            creation_time.as_ref()
         ],
-        bump,
+        bump
     )]
-    rent_escrow:Box<Account<'info,RentEscrow>>,
-/* 
-    #[account(init_if_needed,
+     rent_escrow:Account<'info,RentEscrow>,
+
+      #[account(
+        init,
+        payer=centralized_account,
         associated_token::mint = mint,
         associated_token::authority = rent_escrow,
-        payer = centralized_account)]
+        )]
     
-    rent_escrow_ata: Box<Account<'info, TokenAccount>>, */
-    // This is the program derived address
-   /*   #[account(init_if_needed,
-        payer = centralized_account,
-        space=size_of::<MyPDA>() + 8,
-        seeds = [],
-        bump)]
-pub my_pda: Account<'info, MyPDA>,  */
+        rent_escrow_ata: Box<Account<'info, TokenAccount>>, 
+
+ 
 }
 
 pub fn handle_mint_rental_token<'info>(
     ctx: Context<'_, '_, '_, 'info, MintRentalTokenPayload<'info>>,
+    land_asset_id:Pubkey,
+    creation_time:String,
+    bump:u8,
     mint_metadata_args: Vec<u8>,
-    leaves_data: Vec<LeafData>,
+    leaves_data: u64,
+    
     
 ) -> Result<()> {
+    /* let a= creation_date.as_bytes().as_ref();
+    let b=creation_date.as_bytes(); */
     // let bump_seed = [ctx.bumps.central_authority];
     // let signer_seeds: &[&[&[u8]]] = &[&["central_authority".as_bytes(), &bump_seed.as_ref()]];
 /* 
@@ -137,7 +136,7 @@ pub fn handle_mint_rental_token<'info>(
         return err!(MyError::InvalidAuthority);
     } */
 
-     let expected_cost = ctx.accounts.central_authority.base_cost * leaves_data.len() as u64; 
+     let expected_cost = ctx.accounts.central_authority.base_cost * leaves_data as u64; 
 
    /*  if ctx.accounts.caller_ata.amount < expected_cost {
         return err!(MyError::InsuffientFunds);
@@ -210,7 +209,7 @@ pub fn handle_mint_rental_token<'info>(
 
     let decimals = ctx.accounts.mint.decimals;
 
-  /*   transfer_checked(
+     /* transfer_checked(
         CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
             TransferChecked {
@@ -222,7 +221,7 @@ pub fn handle_mint_rental_token<'info>(
         ),
         expected_cost,
         decimals,
-    )?; */
+    )?;  */
 
     //let percent = (1 as f64 - ctx.accounts.central_authority.admin_quota) / nft_atas.len() as f64;
     //let quota = percent * (expected_cost as f64);
@@ -269,8 +268,15 @@ pub fn handle_mint_rental_token<'info>(
         decimals,
     )?; */
 
-        //transfer to escrow
-   /*       transfer_checked(
+      let mint_metadata = MetadataArgs::try_from_slice(mint_metadata_args.as_slice())?;
+    
+      ctx.accounts.rent_escrow.land_asset_id=land_asset_id;      
+       ctx.accounts.rent_escrow.creation_time=creation_time; 
+       ctx.accounts.rent_escrow.escrow_bump=[bump]; 
+       ctx.accounts.rent_escrow.expected_cost=expected_cost;
+       ctx.accounts.rent_escrow.fee_quota=fee_quota;
+
+        transfer_checked(
         CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
             TransferChecked {
@@ -283,10 +289,10 @@ pub fn handle_mint_rental_token<'info>(
         expected_cost,
         decimals,
     )?; 
- */
-      let mint_metadata = MetadataArgs::try_from_slice(mint_metadata_args.as_slice())?;
 
-    MintToCollectionV1CpiBuilder::new(&ctx.accounts.bubblegum_program.to_account_info())
+msg!("decimal {}",decimals);
+msg!("expected cost {}",expected_cost);
+   let ans= MintToCollectionV1CpiBuilder::new(&ctx.accounts.bubblegum_program.to_account_info())
         .tree_config(&ctx.accounts.tree_config.to_account_info())
         .leaf_owner(&ctx.accounts.caller.to_account_info())
         .leaf_delegate(&ctx.accounts.centralized_account.to_account_info())
@@ -305,6 +311,7 @@ pub fn handle_mint_rental_token<'info>(
         .metadata(mint_metadata)
         .invoke()?;  
     // .invoke_signed(signer_seeds)?;
+msg!("ans {:?}",ans);
 
     Ok(())
 }
