@@ -32,7 +32,7 @@ pub struct InitializePayload<'info> {
 
 pub fn handle_initialize(ctx: Context<InitializePayload>) -> Result<()> {
     if ctx.accounts.central_authority.initialized {
-        return err!(MyError::AlreadyInitialized);
+        return err!(CustomErrors::AlreadyInitialized);
     }
 
     let data = &mut ctx.accounts.central_authority;

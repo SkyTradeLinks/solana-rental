@@ -1,12 +1,15 @@
 use anchor_lang::prelude::*;
 
 #[error_code]
-pub enum MyError {
+pub enum CustomErrors {
     #[msg("Program already initialized!")]
     AlreadyInitialized,
 
     #[msg("Invalid authority provided!")]
     InvalidAuthority,
+
+    #[msg("Payment receiver is not the actual owner")]
+    InvalidReceiver,
 
     #[msg("Caller doesn't have enough funds to complete this call")]
     InsuffientFunds,

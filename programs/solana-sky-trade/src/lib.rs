@@ -12,7 +12,6 @@ declare_id!("6MpYcQGjhhGgjXQxfg1KDWpBYarS8CgKxiyGT92LFN2a");
 
 #[program]
 pub mod solana_sky_trade {
- 
 
     use super::*;
 
@@ -22,16 +21,27 @@ pub mod solana_sky_trade {
 
     pub fn mint_rental_token<'info>(
         ctx: Context<'_, '_, '_, 'info, MintRentalTokenPayload<'info>>,
-        land_asset_id:Pubkey,creation_time:String,bump:u8,
+        land_asset_id: Pubkey,
+        creation_time: String,
+        bump: u8,
         mint_metadata_args: Vec<u8>,
         leaves_data: u64,
-        
     ) -> Result<()> {
-        handle_mint_rental_token(ctx,land_asset_id,creation_time,bump, mint_metadata_args, leaves_data)
+        handle_mint_rental_token(
+            ctx,
+            land_asset_id,
+            creation_time,
+            bump,
+            mint_metadata_args,
+            leaves_data,
+        )
     }
 
-    pub fn transfer_on_expiry<'info>(ctx: Context<'_, '_, '_, 'info,TransferOnExpiryAccounts<'info>>,land_asset_id:Pubkey,creation_time:String,bump:u32)->Result<()>{
-        handle_transfer_on_expiry(ctx, land_asset_id, creation_time,bump)
+    pub fn transfer_on_expiry<'info>(
+        ctx: Context<'_, '_, '_, 'info, TransferOnExpiryAccounts<'info>>,
+        leaf: LeafData,
+    ) -> Result<()> {
+        handle_transfer_on_expiry(ctx, leaf)
     }
 
     pub fn update_config(

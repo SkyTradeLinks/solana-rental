@@ -1,12 +1,21 @@
 use anchor_lang::prelude::*;
 
-#[derive(Debug, Clone, AnchorDeserialize, AnchorSerialize)]
+#[derive(Clone, AnchorDeserialize, AnchorSerialize)]
 pub struct LeafData {
-    // pub leaf_index: u32,
-    // pub leaf_nonce: u64,
-    pub owner: Pubkey,
-    // pub delegate: Pubkey,
-    // pub root: Pubkey,
-    // pub leaf_hash: Option<[u8; 32]>,
-    // pub leaf_metadata: Vec<u8>
+    pub index: u32,
+    pub nonce: u64,
+    pub root: [u8; 32],
+    pub hash: [u8; 32],
+    pub creator_hash: [u8; 32],
+    // pub metadata: AnchorMetadataArgs,
 }
+
+// #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
+// pub struct AnchorMetadataArgs {
+//     pub name: String,
+//     pub symbol: String,
+//     pub uri: String,
+//     pub seller_fee_basis_points: u16,
+//     pub primary_sale_happened: bool,
+//     pub is_mutable: bool,
+// }

@@ -2,7 +2,6 @@ use crate::{errors::*, state::*};
 use anchor_lang::prelude::*;
 use anchor_spl::token::Mint;
 
-use std::mem::size_of;
 #[derive(Accounts)]
 pub struct UpdateConfigPayload<'info> {
     #[account(
@@ -18,13 +17,6 @@ pub struct UpdateConfigPayload<'info> {
     pub system_program: Program<'info, System>,
 
     pub mint_account: Account<'info, Mint>,
-
-      #[account(init_if_needed,
-        payer = centralized_account,
-        space=size_of::<MyPDA>() + 8,
-        seeds = [centralized_account.key().as_ref()],
-        bump)]
-pub my_pda: Account<'info, MyPDA>, 
 }
 
 #[derive(Debug, Clone, AnchorDeserialize, AnchorSerialize)]
@@ -42,13 +34,13 @@ pub fn handle_update_config(
 ) -> Result<()> {
     if ctx.accounts.central_authority.centralized_account != ctx.accounts.centralized_account.key()
     {
-        return err!(MyError::InvalidAuthority);
+        return err!(CustomErrors::InvalidAuthority);
     }
 
     match payload.base_cost {
         Some(value) => {
-            ctx.accounts.central_authority.base_cost = (
-                value * f64::powf(10.0, ctx.accounts.mint_account.decimals.into())) as u64;
+            ctx.accounts.central_authority.base_cost =
+                (value * f64::powf(10.0, ctx.accounts.mint_account.decimals.into())) as u64;
         }
         None => {}
     }
@@ -73,8 +65,4 @@ pub fn handle_update_config(
     }
 
     Ok(())
-}
-#[account]
-pub struct MyPDA {
-    x: u64,
 }
