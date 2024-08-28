@@ -1,5 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
-import { Program } from "@coral-xyz/anchor";
+import { BN, Program } from "@coral-xyz/anchor";
 import { SolanaSkyTrade } from "../target/types/solana_sky_trade";
 import crypto from "crypto"
 import {
@@ -256,117 +256,12 @@ const nonceEnv=process.env.NONCE_ACCOUNT
     let leavesData = [];
     let accountsToPass = [];
 
-    for (let nft_index of land_nfts) {
-      const [assetId, bump] = findLeafAssetIdPda(umi, {
-        merkleTree: publicKey(landMerkleTree.publicKey),
-        leafIndex: nft_index,
-      });
-      console.log({assetId})
-      let assetWithProof;
 
-      try {
-        assetWithProof = await getAssetWithProof(umi, assetId);
-      } catch (err) {
-        // ensure it's created for test purposes!
-        if (err.message.includes("Asset not found")) {
-          await mintV1(umi, {
-            leafOwner: publicKey(landOwner),
-            merkleTree: publicKey(landMerkleTree.publicKey),
-            metadata: {
-              name: "Land NFT",
-              symbol: "",
-              uri: "",
-              creators: [],
-              sellerFeeBasisPoints: 0,
-              primarySaleHappened: false,
-              isMutable: false,
-              editionNonce: null,
-              uses: null,
-              collection: null,
-              tokenProgramVersion: TokenProgramVersion.Original,
-              tokenStandard: TokenStandard.NonFungible,
-            },
-          }).sendAndConfirm(umi);
-
-          assetWithProof = await getAssetWithProof(umi, assetId);
-        }
-      }
-
-      let owner = new anchor.web3.PublicKey(assetWithProof.leafOwner);
-
-      let leafData = {
-        leafIndex: new anchor.BN(assetWithProof.index),
-        leafNonce: new anchor.BN(assetWithProof.nonce),
-        owner,
-        delegate:
-          assetWithProof.leafDelegate != null
-            ? new anchor.web3.PublicKey(assetWithProof.leafDelegate)
-            : owner,
-        root: new anchor.web3.PublicKey(assetWithProof.root),
-        leafHash: [
-          ...new anchor.web3.PublicKey(
-            assetWithProof.rpcAssetProof.leaf.toString()
-          ).toBytes(),
-        ],
-        leafMetadata: Buffer.from(
-          getMetadataArgsSerializer().serialize(assetWithProof.metadata)
-        ),
-      };
-
-      leavesData.push(leafData);
-
-      // Push Owner
-      accountsToPass.push({
-        pubkey: owner,
-        isSigner: false,
-        isWritable: true,
-      });
-
-      let owner_ata = getAssociatedTokenAddressSync(mintAccount, owner);
-
-      accountsToPass.push({
-        pubkey: owner_ata,
-        isSigner: false,
-        isWritable: true,
-      });
-    }
 
     let collectionMint = new PublicKey(
       "94pbP1FULSAFPk9BVhKA7NHG62ijCtQkGyXvQsxaYvDr"
     );
 
-    let offChainMetadata = {
-      name: "RENTAL NFT",
-      symbol: "R-NFT",
-      description: "",
-      image: "https://docs.sky.trade/sky-trade-logo.svg",
-      external_url: "https://sky.trade/",
-      metadata:{
-        
-      }
-    };
-
-    let cid = await pinFilesToIPFS(offChainMetadata);
-
-    let metadataBuffer = getMetadataArgsSerializer().serialize({
-      name: "Rental NFT",
-      symbol: "",
-      uri: `ipfs://${cid}/`,
-      creators: [
-        { address: umi.identity.publicKey, verified: true, share: 100 },
-      ],
-      sellerFeeBasisPoints: 0,
-      primarySaleHappened: false,
-      isMutable: false,
-      editionNonce: null,
-      uses: null,
-      collection: {
-        key: publicKey(collectionMint),
-        verified: true,
-      },
-      tokenProgramVersion: TokenProgramVersion.Original,
-      tokenStandard: TokenStandard.NonFungible,
-    });
 
     let centralAuthorityInfo = await program.account.data.fetch(
       centralAuthority
@@ -382,19 +277,6 @@ let feeAccount = new anchor.web3.PublicKey(process.env.FEE_ACCOUNT);
     );
     console.log({feeAccountAta})
 
-    let [collectionMetadata] = findMetadataPda(umi, {
-      mint: publicKey(collectionMint),
-    });
-
-    let [collectionEdition] = findMasterEditionPda(umi, {
-      mint: publicKey(collectionMint),
-    });
-
-    const [bubblegumSigner] = PublicKey.findProgramAddressSync(
-      // `collection_cpi` is a custom prefix required by the Bubblegum program
-      [Buffer.from("collection_cpi", "utf8")],
-      new PublicKey(MPL_BUBBLEGUM_PROGRAM_ID)
-    );
 
 /*     const [rentalassetId, bump] = findLeafAssetIdPda(umi, {
       merkleTree: publicKey(rentalMerkleTree.publicKey),
@@ -417,8 +299,7 @@ console.log("----------------------------")
 
     umi.use(signerIdentity(callersigner));
 
-    
-    const seeds = []
+
     
   
     let landAssetId=new PublicKey("Gg1xbHzW1zdzCgLjMAAxaTHsg4zRaTnnZat2go6ERYc8");
@@ -436,22 +317,38 @@ console.log({dateNow})
 
     console.log(ans)
 
+    const { dataHash: hash, creatorHash, index, nonce, root } =
+      await getAssetWithProof(umi, publicKey(landAssetId.toString()));
 
 
-    let ix = await program.methods.transferOnExpiry(landAssetId,dateNow,bump).accountsStrict({
-        payer:caller.publicKey,
-        payerAta:callerAta,
-        mint:mintAccount,
+    let ix = await program.methods
+      .transferOnExpiry({
+        hash: Array.from(hash),
+        creatorHash: Array.from(creatorHash),
+        // metadata: metadata,
+        index,
+        nonce: new BN(nonce),
+        root: Array.from(root),
+      })
+      .accountsStrict({
+        payer: caller.publicKey,
+        payerAta: callerAta,
+        mint: mintAccount,
         feeAccount,
-        feeAccountAta:feeAccountAta.address,
-        landOwner:caller.publicKey,
-        landOwnerAta:callerAta,
+        feeAccountAta: feeAccountAta.address,
+        landOwner: caller.publicKey,
+        landDelegate: caller.publicKey,
+        paymentReceiverAta: callerAta,
+        paymentReceiver: caller.publicKey,
         associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-             tokenProgram: TOKEN_PROGRAM_ID,        
-        systemProgram:SYSTEM_PROGRAM_ID,
-        rentEscrow:rent_escrow,
-        rentEscrowAta:rent_escrow_Ata,
-      }).instruction()
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SYSTEM_PROGRAM_ID,
+        rentEscrow: rent_escrow,
+        rentEscrowAta: rent_escrow_Ata,
+        compressionProgram: SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,
+        merkleTree: merkleTreeAc,
+      })
+      .instruction();
   
       let tx = new Transaction();
       tx = tx.add(ix);
@@ -460,8 +357,6 @@ console.log({dateNow})
         .blockhash;
         tx.recentBlockhash = blockhash;
         tx.feePayer = localKp.publicKey; */
-  
-       
       
         console.log({txsize:getTxSize(tx, caller.publicKey)});
         let sig=await sendAndConfirmTransaction(provider.connection,tx,[caller]).catch((e)=>{
@@ -470,10 +365,6 @@ console.log({dateNow})
   
         //let escrowPda=await program.account.escrow.fetch(escrowAddress)
       console.log("Create escrow transaction signature", sig);
-      
-  
-      
-     
    });
 
 
