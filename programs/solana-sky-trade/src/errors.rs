@@ -22,4 +22,10 @@ pub enum CustomErrors {
 
     #[msg("Provided Accounts should be a multiple of 2")]
     InvalidRemainingAccountsPassed,
+
+    #[msg("Provided minutes in the time should be 00 or 30")]
+    InvalidTime,
+
+    #[msg("Rental token has not expired yet")]
+    InvalidTransferTime,
 }
