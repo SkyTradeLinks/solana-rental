@@ -4,8 +4,18 @@ use anchor_spl::{
     token::{transfer_checked, Mint, Token, TokenAccount, TransferChecked},
 };
 use mpl_bubblegum::{instructions::MintToCollectionV1CpiBuilder, types::MetadataArgs};
+use mpl_token_metadata::ID;
 
 use crate::state::*;
+
+#[derive(Clone)]
+pub struct Metadata;
+
+impl anchor_lang::Id for Metadata {
+    fn id() -> Pubkey {
+        ID
+    }
+}
 
 #[derive(Accounts)]
 #[instruction(land_asset_id:Pubkey,creation_time:String)]
@@ -21,12 +31,6 @@ pub struct MintRentalTokenPayload<'info> {
     #[account(mut)]
     pub centralized_account: Signer<'info>,
 
-    #[account(
-        associated_token::mint = mint,
-        associated_token::authority = centralized_account
-    )]
-    pub centralized_account_ata: Account<'info, TokenAccount>,
-
     #[account(mut)]
     pub caller: Signer<'info>,
 
@@ -35,47 +39,6 @@ pub struct MintRentalTokenPayload<'info> {
         associated_token::authority = caller
     )]
     pub caller_ata: Box<Account<'info, TokenAccount>>,
-
-    /// CHECK: This account is checked in the instruction
-    #[account(mut)]
-    pub rental_merkle_tree: AccountInfo<'info>,
-
-    /// CHECK: This account is checked in the instruction
-    #[account(mut)]
-    pub tree_config: UncheckedAccount<'info>,
-
-    /// CHECK: This account is checked in the instruction
-    pub land_merkle_tree: UncheckedAccount<'info>,
-
-    /// CHECK: This account is checked in the instruction
-    pub collection_mint: UncheckedAccount<'info>,
-
-    #[account(mut)]
-    /// CHECK: This account is checked in the instruction
-    pub collection_metadata: UncheckedAccount<'info>,
-
-    /// CHECK: This account is checked in the instruction
-    pub collection_edition: UncheckedAccount<'info>,
-
-    /// CHECK: used to sign creation
-    pub bubblegum_signer: UncheckedAccount<'info>,
-
-    /// CHECK: This account is checked in the instruction
-
-    /// CHECK: This account is checked in the instruction
-    pub bubblegum_program: UncheckedAccount<'info>,
-
-    /// CHECK: This account is checked in the instruction
-    pub log_wrapper: UncheckedAccount<'info>,
-
-    /// CHECK: This account is checked in the instruction
-    pub compression_program: UncheckedAccount<'info>,
-    pub system_program: Program<'info, System>,
-    pub associated_token_program: Program<'info, AssociatedToken>,
-    pub token_program: Program<'info, Token>,
-
-    /// CHECK: This account is checked in the instruction
-    pub token_metadata_program: UncheckedAccount<'info>,
 
     #[account(
         init,
@@ -97,6 +60,38 @@ pub struct MintRentalTokenPayload<'info> {
         associated_token::authority = rent_escrow,
         )]
     rent_escrow_ata: Box<Account<'info, TokenAccount>>,
+
+    /// CHECK: This account is checked in the instruction
+    #[account(mut)]
+    pub rental_merkle_tree: AccountInfo<'info>,
+
+    /// CHECK: This account is checked in the instruction
+    #[account(mut)]
+    pub tree_config: UncheckedAccount<'info>,
+
+    /// CHECK: This account is checked in the instruction
+    pub land_merkle_tree: UncheckedAccount<'info>,
+
+    /// CHECK: This account is checked in the instruction
+    pub collection_mint: UncheckedAccount<'info>,
+
+    /// CHECK: This account is checked in the instruction
+    #[account(mut)]
+    pub collection_metadata: UncheckedAccount<'info>,
+
+    /// CHECK: This account is checked in the instruction
+    pub collection_edition: UncheckedAccount<'info>,
+
+    /// CHECK: used to sign creation
+    pub bubblegum_signer: UncheckedAccount<'info>,
+
+    pub bubblegum_program: Program<'info, MplBubblegumProgramAccount>,
+    pub log_wrapper: Program<'info, NoopProgramAccount>,
+    pub compression_program: Program<'info, SplAccountCompressionProgramAccount>,
+    pub system_program: Program<'info, System>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub token_program: Program<'info, Token>,
+    pub token_metadata_program: Program<'info, Metadata>,
 }
 
 pub fn handle_mint_rental_token<'info>(
@@ -160,8 +155,4 @@ pub fn handle_mint_rental_token<'info>(
     msg!("ans {:?}", ans);
 
     Ok(())
-}
-#[account]
-pub struct MyPDA {
-    x: u64,
 }

@@ -23,7 +23,7 @@ pub struct UpdateConfigPayload<'info> {
 pub struct UpdateConfigData {
     pub base_cost: Option<f64>,
     pub admin_quota: Option<f64>,
-    pub merkle_tree_address: Option<Pubkey>,
+    pub auction_house_address: Option<Pubkey>,
     pub multiplier: Option<f64>,
     pub fee_account: Option<Pubkey>,
 }
@@ -52,9 +52,9 @@ pub fn handle_update_config(
         None => {}
     }
 
-    match payload.merkle_tree_address {
+    match payload.auction_house_address {
         Some(value) => {
-            ctx.accounts.central_authority.merkle_tree_address = value;
+            ctx.accounts.central_authority.auction_house_address = value;
         }
         None => {}
     }

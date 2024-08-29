@@ -49,6 +49,7 @@ import {
 
   // input private key here
   let centralizedAccount = loadKeyPair(process.env.CENTRALIZED_ACCOUNT);
+  let auctionProgram = loadKeyPair(process.env.AH_PROGRAM_ADDRESS);
 
   const wallet = new anchor.Wallet(centralizedAccount);
 
@@ -227,10 +228,10 @@ import {
       .initialize()
       .accountsStrict({
         payer: centralizedAccount.publicKey,
-         centralAuthority: centralAuthority,
+        centralAuthority: centralAuthority,
         mintAccount: mintAccount,
-         systemProgram: anchor.web3.SystemProgram.programId,
-        rentalMerkleTree: rentalMerkleTree.publicKey,
+        systemProgram: anchor.web3.SystemProgram.programId,
+        auctionHouseAddress: auctionProgram.publicKey,
         feeAccount: feeAta.address,
       })
       .instruction();

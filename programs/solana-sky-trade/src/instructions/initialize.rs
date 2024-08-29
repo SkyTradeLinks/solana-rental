@@ -23,7 +23,7 @@ pub struct InitializePayload<'info> {
     pub fee_account: AccountInfo<'info>,
 
     /// CHECK: This account is checked in the instruction
-    pub rental_merkle_tree: AccountInfo<'info>,
+    pub auction_house_address: AccountInfo<'info>,
 
     pub system_program: Program<'info, System>,
 
@@ -48,7 +48,7 @@ pub fn handle_initialize(ctx: Context<InitializePayload>) -> Result<()> {
     data.admin_quota = 0.3;
 
     // Rental Merkle Tree Address
-    data.merkle_tree_address = ctx.accounts.rental_merkle_tree.key();
+    data.auction_house_address = ctx.accounts.auction_house_address.key();
 
     // Fee Account
     data.fee_account = ctx.accounts.fee_account.key();

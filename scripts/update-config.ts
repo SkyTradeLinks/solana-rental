@@ -23,6 +23,10 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
   // input connection uri
   const connection = new Connection(process.env.CONNECTION_URI);
 
+  let auctionProgram = new anchor.web3.PublicKey(
+    process.env.AH_PROGRAM_ADDRESS
+  );
+
   const provider = new anchor.AnchorProvider(connection, wallet, {});
   anchor.setProvider(provider);
 
@@ -94,27 +98,20 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
   }
 
   let priorityIx = await getPriorityFeeIx(provider.connection);
-  const seeds = [centralizedAccount.publicKey.toBytes()]
-   const [myPda, _bump] = anchor.web3.PublicKey.findProgramAddressSync(seeds, program.programId);
-
-  console.log("the storage account address is", myPda.toBase58()); 
-
 
   let ix = await program.methods
     .updateConfig({
       baseCost,
       adminQuota,
-      merkleTreeAddress: newMerkleTree,
       multiplier: null,
       feeAccount,
+      auctionHouseAddress: auctionProgram,
     })
     .accountsStrict({
       centralAuthority,
       centralizedAccount: centralizedAccount.publicKey,
       mintAccount: mintAccount,
       systemProgram: anchor.web3.SystemProgram.programId,
-      myPda
-      
     })
     .instruction();
 

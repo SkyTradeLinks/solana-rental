@@ -1,4 +1,4 @@
-use crate::{Auction, LeafData, RentEscrow, SplAccountCompressionProgramAccount};
+use crate::{Auction, LeafData, RentEscrow, SplAccountCompressionProgramAccount, Data};
 use anchor_lang::{prelude::*, solana_program::system_program};
 use anchor_spl::{
     associated_token::AssociatedToken,
@@ -17,13 +17,15 @@ pub struct TransferOnExpiryAccounts<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     pub mint: Account<'info, Mint>,
-    pub associated_token_program: Program<'info, AssociatedToken>,
-    pub token_program: Program<'info, Token>,
-    system_program: Program<'info, System>,
+
+    #[account(
+        seeds = [b"central_authority"],
+        bump
+        )]
+    pub central_authority: Box<Account<'info, Data>>,
 
     /// CHECK: checked at ix
     pub fee_account: UncheckedAccount<'info>,
-
     #[account(
         mut,
          associated_token::mint = mint,
@@ -56,12 +58,15 @@ pub struct TransferOnExpiryAccounts<'info> {
        mut,
         associated_token::mint = mint,
         associated_token::authority = rent_escrow,
-        )]
+    )]
     rent_escrow_ata: Account<'info, TokenAccount>,
     /// CHECK: Don't need to check
     merkle_tree: AccountInfo<'info>,
 
-    compression_program: Program<'info, SplAccountCompressionProgramAccount>,
+    pub compression_program: Program<'info, SplAccountCompressionProgramAccount>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub token_program: Program<'info, Token>,
+    pub system_program: Program<'info, System>,
 }
 
 impl<'info> TransferOnExpiryAccounts<'info> {
@@ -112,6 +117,7 @@ pub fn handle_transfer_on_expiry<'info>(
     msg!("espected cost {}", expected_cost);
     msg!("feequota {}", fee_quota);
 
+    
     let asset_id = get_asset_id(&ctx.accounts.merkle_tree.key(), leaf_data.nonce);
     let leaf = LeafSchema::V1 {
         id: asset_id,
@@ -121,9 +127,8 @@ pub fn handle_transfer_on_expiry<'info>(
         data_hash: leaf_data.hash,
         creator_hash: leaf_data.creator_hash,
     };
-
-    //TODO check mut accounts
-    //TODO check escrow seeds (see if this is needed)
+    
+    require_keys_eq!(ctx.accounts.rent_escrow.land_asset_id, asset_id);
 
     //This checks land_owner as owner
     VerifyLeafCpi::new(
@@ -147,12 +152,11 @@ pub fn handle_transfer_on_expiry<'info>(
 
     if ctx.accounts.land_owner.owner.key() == system_program::id().key() {
         msg!("Land not in auction");
-        if ctx.accounts.land_owner.owner.key() != ctx.accounts.payment_receiver.key() {
+        if ctx.accounts.land_owner.key() != ctx.accounts.payment_receiver.key() {
             return err!(CustomErrors::InvalidReceiver);
         }
-    } else if ctx.accounts.land_owner.owner.key().to_string()
-        == "ahpDxBMbyGLzDXAT7zLDyDBhvhXHAQyAAQFZerA4phL"
-    //TODO find a better way
+    } else if ctx.accounts.land_owner.owner.key()
+        == ctx.accounts.central_authority.auction_house_address.key()
     {
         let mut auction_data: &[u8] = &ctx.accounts.land_owner.data.borrow();
 
@@ -172,12 +176,12 @@ pub fn handle_transfer_on_expiry<'info>(
             .with_signer(&[&escrow.escrow_seeds()]),
         fee_quota,
     )?;
-    let land_owner = expected_cost - fee_quota;
+    let final_payment = expected_cost - fee_quota;
     transfer(
         ctx.accounts
             .transfer_receiver_ctx()
             .with_signer(&[&escrow.escrow_seeds()]),
-        land_owner,
+        final_payment,
     )?;
 
     //close offer ata
