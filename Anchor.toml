@@ -9,7 +9,7 @@ url = "https://api.apr.dev"
 cluster = "https://boldest-wandering-moon.solana-devnet.quiknode.pro/e9af7ce40b11247cb6f6568aa2e886abf5dc4ef4/"
 # cluster = "localnet"
 # wallet = "/home/erenaspire7/.config/solana/id.json"
-wallet = "/home/zeher/skyTradeLinks/solana-rental/wallets/devnet-keys/deploymentKey.json"
+wallet = "/Users/arthurtavares/skytrade/scripts/skypKF3R8NHdFavgGQGpkaz4Bv1J9YzQHpyU4zFeBaz.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"

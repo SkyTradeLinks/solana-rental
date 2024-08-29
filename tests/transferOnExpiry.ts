@@ -56,6 +56,7 @@ import {
 } from "@solana/spl-token";
 import "dotenv/config"
 import {
+  Connection,
   LAMPORTS_PER_SOL,
   NONCE_ACCOUNT_LENGTH,
   PublicKey,
@@ -84,6 +85,11 @@ import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 import { associatedAddress } from "@coral-xyz/anchor/dist/cjs/utils/token";
 import { utf8 } from "@metaplex-foundation/umi/serializers";
 import { SYSTEM_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/native/system";
+
+const landAssetId = new PublicKey(
+  "7gyD7j1seeJAWrh24HvC6fxXWcXGjuseUzsmkooNt99d"
+);
+
 describe("solana-sky-trade", () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
@@ -115,7 +121,7 @@ describe("solana-sky-trade", () => {
 
   umi.use(signerIdentity(authoritySigner));
   // caZUFsSZLD8VK8q652FZm3nZWqq4HFncr4pix8sckYb
-  const caller = loadKeyPair(join(__dirname,"../wallets/devnet-keys/caller.json"));
+  const caller = centralizedAccount
 
   const centralizedAccountAta = getAssociatedTokenAddressSync(
     mintAccount,
@@ -126,22 +132,6 @@ describe("solana-sky-trade", () => {
 
   const landMerkleTree = loadKeyPair(process.env.LAND_MERKLE_TREE);
 
-  const callerAta = getAssociatedTokenAddressSync(
-    mintAccount,
-    caller.publicKey
-  );
-
-  const treeConfig = findTreeConfigPda(umi, {
-    merkleTree: publicKey(rentalMerkleTree.publicKey),
-  })[0];
-
-  const landOwner = new anchor.web3.PublicKey(
-    "73ajJBDet2TbccHesc1CgHcMbDG83fafiy5iP3iGCEYL"
-  );
-
-  const saleRecipient = new anchor.web3.PublicKey(
-    "AUda7XmQ9M4msWsZNzeWHiVND5CtbfLo2fLsiwQtQjrH"
-  );
 const nonceEnv=process.env.NONCE_ACCOUNT
   const nonceAccount = loadKeyPair(nonceEnv);
 
@@ -250,12 +240,16 @@ const nonceEnv=process.env.NONCE_ACCOUNT
   });
 
 
-  it("should successfully mint an nft", async () => {
+  it("should successfully pay the rental after expiry", async () => {
     let land_nfts = [0];
 
     let leavesData = [];
     let accountsToPass = [];
 
+    let assetWithProof = await getAssetWithProof(
+      umi,
+      publicKey(landAssetId.toString())
+    );
 
 
     let collectionMint = new PublicKey(
@@ -278,19 +272,6 @@ let feeAccount = new anchor.web3.PublicKey(process.env.FEE_ACCOUNT);
     console.log({feeAccountAta})
 
 
-/*     const [rentalassetId, bump] = findLeafAssetIdPda(umi, {
-      merkleTree: publicKey(rentalMerkleTree.publicKey),
-      leafIndex: 37,
-    });
-console.log("----------------------------")
-
-    console.log({rentalassetId});
-    const rpcAsset = await umi.rpc.getAsset(rentalassetId); */
-    let merkleTreeAc= await fetchMerkleTree(umi,  publicKey(rentalMerkleTree.publicKey));
-    //console.log({merkleTreeAc})
-    //console.log({rpcAsset})
-    //const rpcAssetProof = await getAssetWithProof(umi,publicKey(rentalassetId));
-
     let callersigner = createSignerFromKeypair(umi, {
       secretKey: caller.secretKey,
       publicKey: publicKey(caller.publicKey),
@@ -302,8 +283,7 @@ console.log("----------------------------")
 
     
   
-    let landAssetId=new PublicKey("Gg1xbHzW1zdzCgLjMAAxaTHsg4zRaTnnZat2go6ERYc8");
-    let dateNow='2024-08-26T20:29:32.011Z';//'2024-08-26T19:25:12.738Z'
+    let dateNow = "2024-08-29T13:40:08.072Z";//'2024-08-26T19:25:12.738Z'
 console.log({dateNow})
     
     let [rent_escrow,bump]=anchor.web3.PublicKey.findProgramAddressSync([landAssetId.toBytes(),Buffer.from(dateNow)],program.programId)
@@ -311,43 +291,79 @@ console.log({dateNow})
     const rent_escrow_Ata = associatedAddress({ mint: mintAccount, owner: rent_escrow });
    
      let leavesDataLength =new anchor.BN(leavesData.length)
-    console.log({caller:caller.publicKey})
      
     let ans=await program.account.rentEscrow.fetch(rent_escrow)
 
-    console.log(ans)
 
-    const { dataHash: hash, creatorHash, index, nonce, root } =
-      await getAssetWithProof(umi, publicKey(landAssetId.toString()));
+      const proofLen = assetWithProof.proof.length;
 
+      const canopyDepth = await getCanopyDepth(
+        provider.connection,
+        new PublicKey(assetWithProof.merkleTree)
+      );
+        
+      const proof = assetWithProof.proof
+        .map((node) => ({
+          pubkey: new PublicKey(node),
+          isSigner: false,
+          isWritable: false,
+        }))
+        .slice(0, proofLen - canopyDepth);
+
+    const { dataHash: hash, creatorHash, index, nonce, root } = assetWithProof;
+    const { leafOwner, leafDelegate } = assetWithProof
+        
+    //TODO check if it leafOwner is owned by ah program
+    const leafOwnerData = await provider.connection.getAccountInfo(new PublicKey(leafOwner))
+
+
+    let paymentReceiver: PublicKey
+    if (leafOwnerData.owner == SYSTEM_PROGRAM_ID) {
+      console.log("land not in auction")
+      paymentReceiver = new PublicKey(leafOwner)
+    } else if (leafOwnerData.owner.toString() == process.env.AH_PROGRAM_ADDRESS) {
+      console.log("land in auction")
+
+      let discriminatorAndOthers = 8 + 10 + 32 + 32 + 8 + 8
+
+      paymentReceiver = new PublicKey(
+        leafOwnerData.data.slice(
+          discriminatorAndOthers,
+          discriminatorAndOthers + 32
+        ))
+      
+      console.log("auction creator is", paymentReceiver.toString())
+    } else {
+      throw new Error("Invalid leaf owner");
+    }
+    const paymentReceiverAta = associatedAddress({ mint: mintAccount, owner: paymentReceiver })
 
     let ix = await program.methods
       .transferOnExpiry({
         hash: Array.from(hash),
         creatorHash: Array.from(creatorHash),
-        // metadata: metadata,
         index,
         nonce: new BN(nonce),
         root: Array.from(root),
       })
       .accountsStrict({
         payer: caller.publicKey,
-        payerAta: callerAta,
         mint: mintAccount,
         feeAccount,
         feeAccountAta: feeAccountAta.address,
-        landOwner: caller.publicKey,
-        landDelegate: caller.publicKey,
-        paymentReceiverAta: callerAta,
-        paymentReceiver: caller.publicKey,
+        landOwner: new PublicKey(leafOwner),
+        landDelegate: new PublicKey(leafDelegate),
+        paymentReceiverAta: paymentReceiverAta,
+        paymentReceiver: paymentReceiver,
         associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         tokenProgram: TOKEN_PROGRAM_ID,
         systemProgram: SYSTEM_PROGRAM_ID,
         rentEscrow: rent_escrow,
         rentEscrowAta: rent_escrow_Ata,
-        compressionProgram: SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,
-        merkleTree: merkleTreeAc,
+        compressionProgram: new PublicKey(SPL_ACCOUNT_COMPRESSION_PROGRAM_ID),
+        merkleTree: assetWithProof.merkleTree,
       })
+      .remainingAccounts(proof)
       .instruction();
   
       let tx = new Transaction();
@@ -358,7 +374,6 @@ console.log({dateNow})
         tx.recentBlockhash = blockhash;
         tx.feePayer = localKp.publicKey; */
       
-        console.log({txsize:getTxSize(tx, caller.publicKey)});
         let sig=await sendAndConfirmTransaction(provider.connection,tx,[caller]).catch((e)=>{
             console.log(e)
         })
@@ -370,3 +385,13 @@ console.log({dateNow})
 
 });
 
+const getCanopyDepth = async (
+  connection: Connection,
+  merkleTree: PublicKey
+) => {
+  const splCMT = await ConcurrentMerkleTreeAccount.fromAccountAddress(
+    connection,
+    merkleTree
+  );
+  return splCMT.getCanopyDepth();
+};

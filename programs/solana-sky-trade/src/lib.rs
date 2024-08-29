@@ -8,7 +8,7 @@ pub use errors::*;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("6MpYcQGjhhGgjXQxfg1KDWpBYarS8CgKxiyGT92LFN2a");
+declare_id!("DBp4vLTJM9UpAwYKFN5Hb5zU1ou8mPUwB3CinoST65x5");
 
 #[program]
 pub mod solana_sky_trade {
@@ -41,6 +41,7 @@ pub mod solana_sky_trade {
         ctx: Context<'_, '_, '_, 'info, TransferOnExpiryAccounts<'info>>,
         leaf: LeafData,
     ) -> Result<()> {
+        msg!("starting transfer");
         handle_transfer_on_expiry(ctx, leaf)
     }
 

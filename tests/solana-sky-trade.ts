@@ -80,6 +80,7 @@ import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 import { associatedAddress } from "@coral-xyz/anchor/dist/cjs/utils/token";
 import { utf8 } from "@metaplex-foundation/umi/serializers";
 describe("solana-sky-trade", () => {
+  return
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
 

@@ -1,7 +1,6 @@
 use anchor_lang::prelude::*;
 
-#[derive(AnchorSerialize, AnchorDeserialize)]
-
+#[account]
 /// Created by the Token owner, holds the most updated data of the Auction
 pub struct Auction {
     pub bump: [u8; 1],

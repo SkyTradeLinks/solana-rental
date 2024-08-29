@@ -82,6 +82,7 @@ pub struct MintRentalTokenPayload<'info> {
         payer=centralized_account,
         space=RentEscrow::MAX_SIZE +usize::from(4+creation_time.len()),
         seeds=[
+            b"escrow",
             land_asset_id.key().as_ref(),
             creation_time.as_ref()
         ],
@@ -106,160 +107,12 @@ pub fn handle_mint_rental_token<'info>(
     mint_metadata_args: Vec<u8>,
     leaves_data: u64,
 ) -> Result<()> {
-    /* let a= creation_date.as_bytes().as_ref();
-    let b=creation_date.as_bytes(); */
-    // let bump_seed = [ctx.bumps.central_authority];
-    // let signer_seeds: &[&[&[u8]]] = &[&["central_authority".as_bytes(), &bump_seed.as_ref()]];
-    /*
-    if ctx.accounts.central_authority.centralized_account != ctx.accounts.centralized_account.key()
-    {
-        return err!(MyError::InvalidAuthority);
-    } */
-
-    /* if ctx.accounts.central_authority.merkle_tree_address != ctx.accounts.rental_merkle_tree.key() {
-           return err!(MyError::InvalidRentalAddressPassed);
-       }
-    */
-    /*    let expected_fee_ata = get_associated_token_address(
-        &ctx.accounts.central_authority.fee_account,
-        &ctx.accounts.mint.key(),
-    );
-
-    if expected_fee_ata != ctx.accounts.fee_account_ata.key() {
-        return err!(MyError::InvalidAuthority);
-    } */
-
     let expected_cost = ctx.accounts.central_authority.base_cost * leaves_data as u64;
-
-    /*  if ctx.accounts.caller_ata.amount < expected_cost {
-        return err!(MyError::InsuffientFunds);
-    } */
-
-    //let mut nft_atas: Vec<AccountInfo> = Vec::new();
-    //let accounts = &mut ctx.remaining_accounts.iter();
-
-    /*  if accounts.len() == 0 || accounts.len() % 2 != 0 {
-        return err!(MyError::InvalidRemainingAccountsPassed);
-    } */
-
-    //let length: usize = accounts.len() / 2;
-
-    /* if leaves_data.len() == 0 || leaves_data.len() != length {
-        return err!(MyError::InvalidLandNFTData);
-    } */
-
-    // for index in 0..length {
-    //     let land_owner = next_account_info(accounts)?;
-    //     let land_owner_ata = next_account_info(accounts)?;
-
-    //     let expected_ata = get_associated_token_address(land_owner.key, &ctx.accounts.mint.key());
-
-    //     let leaf_data = &leaves_data[index];
-
-    //     if land_owner_ata.key() != expected_ata || leaf_data.owner != land_owner.key() {
-    //         return err!(MyError::InvalidLandNFTData);
-    //     }
-
-    //     // let asset_id = get_asset_id(
-    //     //     ctx.accounts.land_merkle_tree.key,
-    //     //     leaf_data.leaf_nonce.into(),
-    //     // );
-
-    //     // let metadata = MetadataArgs::try_from_slice(leaf_data.leaf_metadata.as_slice())?;
-
-    //     // let data_hash = hash_metadata(&metadata)?;
-    //     // let creator_hash = hash_creators(&metadata.creators);
-
-    //     // let schema = LeafSchema::V1 {
-    //     //     id: asset_id,
-    //     //     owner: leaf_data.owner,
-    //     //     delegate: leaf_data.delegate,
-    //     //     nonce: leaf_data.leaf_nonce,
-    //     //     data_hash: data_hash,
-    //     //     creator_hash: creator_hash,
-    //     // };
-
-    //     // if schema.hash() != leaf_data.leaf_hash.unwrap() {
-    //     //     return err!(MyError::InvalidLandNFTData);
-    //     // }
-    //         //will do this check when transfering
-    //     if **land_owner_ata.try_borrow_lamports().unwrap() == 0 {
-    //         let _ = create(CpiContext::new(
-    //             ctx.accounts.associated_token_program.to_account_info(),
-    //             Create {
-    //                 payer: ctx.accounts.centralized_account.to_account_info(),
-    //                 associated_token: land_owner_ata.to_account_info(),
-    //                 authority: land_owner.to_account_info(),
-    //                 mint: ctx.accounts.mint.to_account_info(),
-    //                 system_program: ctx.accounts.system_program.to_account_info(),
-    //                 token_program: ctx.accounts.token_program.to_account_info(),
-    //             },
-    //         ));
-    //     }
-
-    //     nft_atas.push(land_owner_ata.to_account_info());
-    // }
 
     let decimals = ctx.accounts.mint.decimals;
 
-    /* transfer_checked(
-        CpiContext::new(
-            ctx.accounts.token_program.to_account_info(),
-            TransferChecked {
-                from: ctx.accounts.caller_ata.to_account_info(),
-                mint: ctx.accounts.mint.to_account_info(),
-                to: ctx.accounts.centralized_account_ata.to_account_info(),
-                authority: ctx.accounts.caller.to_account_info(),
-            },
-        ),
-        expected_cost,
-        decimals,
-    )?;  */
-
-    //let percent = (1 as f64 - ctx.accounts.central_authority.admin_quota) / nft_atas.len() as f64;
-    //let quota = percent * (expected_cost as f64);
-    //let quota = quota as u64;
-
-    // Transfer To Land Owner
-    /*  for ata in nft_atas.iter() {
-        transfer_checked(
-            CpiContext::new(
-                ctx.accounts.token_program.to_account_info(),
-                TransferChecked {
-                    from: ctx.accounts.centralized_account_ata.to_account_info(),
-                    mint: ctx.accounts.mint.to_account_info(),
-                    to: ata.to_account_info(),
-                    authority: ctx.accounts.centralized_account.to_account_info(),
-                },
-            ),
-            quota,
-            decimals,
-        )?;
-    } */
-    //let accounts = &mut ctx.remaining_accounts.iter();
-    //let land_owner=next_account_info(accounts).unwrap();
     let fee_quota = ctx.accounts.central_authority.admin_quota * (expected_cost as f64);
     let fee_quota = fee_quota as u64;
-    /*  let rental_escrow=&mut ctx.accounts.rent_escrow;
-    rental_escrow.caller=ctx.accounts.caller.key();
-    //rental_escrow.landowner=land_owner.key();
-    rental_escrow.rent=expected_cost-fee_quota;
-    rental_escrow.fee=fee_quota; */
-
-    // Transfer To Fee Account
-    /*    transfer_checked(
-        CpiContext::new(
-            ctx.accounts.token_program.to_account_info(),
-            TransferChecked {
-                from: ctx.accounts.centralized_account_ata.to_account_info(),
-                mint: ctx.accounts.mint.to_account_info(),
-                to: ctx.accounts.fee_account_ata.to_account_info(),
-                authority: ctx.accounts.centralized_account.to_account_info(),
-            },
-        ),
-        fee_quota,
-        decimals,
-    )?; */
 
     let mint_metadata = MetadataArgs::try_from_slice(mint_metadata_args.as_slice())?;
 

@@ -72,6 +72,10 @@ import { decode } from "@coral-xyz/anchor/dist/cjs/utils/bytes/bs58";
 import { assert } from "chai";
 import { ConcurrentMerkleTreeAccount } from "@solana/spl-account-compression";
 
+const landAssetId = new PublicKey(
+  "7gyD7j1seeJAWrh24HvC6fxXWcXGjuseUzsmkooNt99d"
+);
+
 import {
   findCollectionAuthorityRecordPda,
   mplTokenMetadata,
@@ -114,7 +118,7 @@ describe("solana-sky-trade", () => {
 
   umi.use(signerIdentity(authoritySigner));
   // caZUFsSZLD8VK8q652FZm3nZWqq4HFncr4pix8sckYb
-  const caller = loadKeyPair(join(__dirname,"../wallets/devnet-keys/caller.json"));
+  const caller = loadKeyPair(join(__dirname,"renter.json"));
 
   const centralizedAccountAta = getAssociatedTokenAddressSync(
     mintAccount,
@@ -122,6 +126,8 @@ describe("solana-sky-trade", () => {
   );
 
   const rentalMerkleTree = loadKeyPair(process.env.RENTAL_MERKLE_TREE);
+
+  const rentalCollection = loadKeyPair(process.env.RENTAL_COLLECTION_MINT);
 
   const landMerkleTree = loadKeyPair(process.env.LAND_MERKLE_TREE);
 
@@ -134,17 +140,10 @@ describe("solana-sky-trade", () => {
     merkleTree: publicKey(rentalMerkleTree.publicKey),
   })[0];
 
-  const landOwner = new anchor.web3.PublicKey(
-    "73ajJBDet2TbccHesc1CgHcMbDG83fafiy5iP3iGCEYL"
-  );
 
-  const saleRecipient = new anchor.web3.PublicKey(
-    "AUda7XmQ9M4msWsZNzeWHiVND5CtbfLo2fLsiwQtQjrH"
-  );
 const nonceEnv=process.env.NONCE_ACCOUNT
   const nonceAccount = loadKeyPair(nonceEnv);
 
-  let createdLeafIndex;
 
   before(async () => {
     const arr = [];
@@ -182,9 +181,11 @@ const nonceEnv=process.env.NONCE_ACCOUNT
       }
     }
 
+    let rentalTree;
+
     // check creation of rental merkle tree
     try {
-      await fetchMerkleTree(umi, publicKey(rentalMerkleTree.publicKey));
+      rentalTree = await fetchMerkleTree(umi, publicKey(rentalMerkleTree.publicKey));
     } catch (err) {
       if (err.name == AccountNotFoundError.name) {
         await (
@@ -202,6 +203,8 @@ const nonceEnv=process.env.NONCE_ACCOUNT
         throw err;
       }
     }
+
+    console.log("rentalTree", rentalTree)
 
     // check if nonce account exists
 
@@ -250,46 +253,13 @@ const nonceEnv=process.env.NONCE_ACCOUNT
 
 
   it("should successfully mint an nft", async () => {
-    let land_nfts = [0];
 
     let leavesData = [];
     let accountsToPass = [];
 
-    for (let nft_index of land_nfts) {
-      const [assetId, bump] = findLeafAssetIdPda(umi, {
-        merkleTree: publicKey(landMerkleTree.publicKey),
-        leafIndex: nft_index,
-      });
-      console.log({assetId})
-      let assetWithProof;
+    let assetWithProof = await getAssetWithProof(umi, publicKey(landAssetId.toString()));
 
-      try {
-        assetWithProof = await getAssetWithProof(umi, assetId);
-      } catch (err) {
-        // ensure it's created for test purposes!
-        if (err.message.includes("Asset not found")) {
-          await mintV1(umi, {
-            leafOwner: publicKey(landOwner),
-            merkleTree: publicKey(landMerkleTree.publicKey),
-            metadata: {
-              name: "Land NFT",
-              symbol: "",
-              uri: "",
-              creators: [],
-              sellerFeeBasisPoints: 0,
-              primarySaleHappened: false,
-              isMutable: false,
-              editionNonce: null,
-              uses: null,
-              collection: null,
-              tokenProgramVersion: TokenProgramVersion.Original,
-              tokenStandard: TokenStandard.NonFungible,
-            },
-          }).sendAndConfirm(umi);
-
-          assetWithProof = await getAssetWithProof(umi, assetId);
-        }
-      }
+    console.log(1)
 
       let owner = new anchor.web3.PublicKey(assetWithProof.leafOwner);
 
@@ -320,19 +290,21 @@ const nonceEnv=process.env.NONCE_ACCOUNT
         isSigner: false,
         isWritable: true,
       });
+    
+    console.log(2);
+    
 
-      let owner_ata = getAssociatedTokenAddressSync(mintAccount, owner);
+      let owner_ata = getAssociatedTokenAddressSync(mintAccount, owner, true);
 
       accountsToPass.push({
         pubkey: owner_ata,
         isSigner: false,
         isWritable: true,
       });
-    }
 
-    let collectionMint = new PublicKey(
-      "94pbP1FULSAFPk9BVhKA7NHG62ijCtQkGyXvQsxaYvDr"
-    );
+
+    console.log(3);
+
 
     let offChainMetadata = {
       name: "RENTAL NFT",
@@ -360,18 +332,16 @@ const nonceEnv=process.env.NONCE_ACCOUNT
       editionNonce: null,
       uses: null,
       collection: {
-        key: publicKey(collectionMint),
+        key: publicKey(rentalCollection.publicKey.toString()),
         verified: true,
       },
       tokenProgramVersion: TokenProgramVersion.Original,
       tokenStandard: TokenStandard.NonFungible,
     });
 
-    let centralAuthorityInfo = await program.account.data.fetch(
-      centralAuthority
-    );
-console.log({centralAuthorityInfo
-})
+    console.log(4);
+
+
 let feeAccount = new anchor.web3.PublicKey(process.env.FEE_ACCOUNT);
     let feeAccountAta = await getOrCreateAssociatedTokenAccount(
       provider.connection,
@@ -382,11 +352,11 @@ let feeAccount = new anchor.web3.PublicKey(process.env.FEE_ACCOUNT);
     console.log({feeAccountAta})
 
     let [collectionMetadata] = findMetadataPda(umi, {
-      mint: publicKey(collectionMint),
+      mint: publicKey(rentalCollection.publicKey.toString()),
     });
 
     let [collectionEdition] = findMasterEditionPda(umi, {
-      mint: publicKey(collectionMint),
+      mint: publicKey(rentalCollection.publicKey.toString()),
     });
 
     const [bubblegumSigner] = PublicKey.findProgramAddressSync(
@@ -403,7 +373,6 @@ console.log("----------------------------")
 
     console.log({rentalassetId});
     const rpcAsset = await umi.rpc.getAsset(rentalassetId); */
-    let merkleTreeAc= await fetchMerkleTree(umi,  publicKey(rentalMerkleTree.publicKey));
     //console.log({merkleTreeAc})
     //console.log({rpcAsset})
     //const rpcAssetProof = await getAssetWithProof(umi,publicKey(rentalassetId));
@@ -416,13 +385,8 @@ console.log("----------------------------")
 
     umi.use(signerIdentity(callersigner));
 
-    
-    const seeds = []
-    
-  
-    let landAssetId=new PublicKey("Gg1xbHzW1zdzCgLjMAAxaTHsg4zRaTnnZat2go6ERYc8");
     let dateNow=new Date().toISOString();//'2024-08-26T19:25:12.738Z'
-console.log({dateNow})
+    console.log({dateNow})
     
     let [rent_escrow,bump]=anchor.web3.PublicKey.findProgramAddressSync([landAssetId.toBytes(),Buffer.from(dateNow)],program.programId)
     
@@ -431,33 +395,39 @@ console.log({dateNow})
      let leavesDataLength =new anchor.BN(leavesData.length)
     console.log({caller:caller.publicKey})
      let ix = await program.methods
-      .mintRentalToken(landAssetId,dateNow,bump,Buffer.from(metadataBuffer), leavesDataLength)
-      .accountsStrict({
-        centralAuthority: centralAuthority,
-        centralizedAccount: centralizedAccount.publicKey,
-           mint: mintAccount,//alt
-           centralizedAccountAta,
-           caller: caller.publicKey,
-           callerAta: callerAta,
-           rentalMerkleTree: rentalMerkleTree.publicKey,
-           treeConfig: treeConfig,
-           landMerkleTree:landMerkleTree.publicKey,
-           collectionMint,
-           collectionEdition,
-           collectionMetadata,
-           bubblegumSigner,//alts
-           bubblegumProgram: MPL_BUBBLEGUM_PROGRAM_ID,//alt
-           logWrapper: SPL_NOOP_PROGRAM_ID,//alt
-           compressionProgram: SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,//alt
-           systemProgram: anchor.web3.SystemProgram.programId,//alt
-           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,//alt
-           tokenProgram: TOKEN_PROGRAM_ID,//alt        
-         tokenMetadataProgram: MPL_TOKEN_METADATA_PROGRAM_ID,//alt
-         rentEscrow:rent_escrow,
-         rentEscrowAta:rent_escrow_Ata        
-      })
-      //.remainingAccounts(accountsToPass)
-      .instruction();
+       .mintRentalToken(
+         landAssetId,
+         dateNow,
+         bump,
+         Buffer.from(metadataBuffer),
+         leavesDataLength
+       )
+       .accountsStrict({
+         centralAuthority: centralAuthority,
+         centralizedAccount: centralizedAccount.publicKey,
+         mint: mintAccount, //alt
+         centralizedAccountAta,
+         caller: caller.publicKey,
+         callerAta: callerAta,
+         rentalMerkleTree: rentalMerkleTree.publicKey,
+         treeConfig: treeConfig,
+         landMerkleTree: landMerkleTree.publicKey,
+         collectionMint: rentalCollection.publicKey.toString(),
+         collectionEdition,
+         collectionMetadata,
+         bubblegumSigner, //alts
+         bubblegumProgram: MPL_BUBBLEGUM_PROGRAM_ID, //alt
+         logWrapper: SPL_NOOP_PROGRAM_ID, //alt
+         compressionProgram: SPL_ACCOUNT_COMPRESSION_PROGRAM_ID, //alt
+         systemProgram: anchor.web3.SystemProgram.programId, //alt
+         associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID, //alt
+         tokenProgram: TOKEN_PROGRAM_ID, //alt
+         tokenMetadataProgram: MPL_TOKEN_METADATA_PROGRAM_ID, //alt
+         rentEscrow: rent_escrow,
+         rentEscrowAta: rent_escrow_Ata,
+       })
+       //.remainingAccounts(accountsToPass)
+       .instruction();
 
   /*   let [tx, nonceBlock] = await createTxWithNonce(
       provider.connection,
@@ -491,6 +461,8 @@ console.log({dateNow})
 
       const transactionV0 = new VersionedTransaction(messageV0);
 
+      console.log("centralized", centralizedAccount.publicKey.toString(), )
+    
       transactionV0.sign([caller,centralizedAccount]);
       //console.log({txsize:getTxSize(transactionV0, centralizedAccount.publicKey)});
 
