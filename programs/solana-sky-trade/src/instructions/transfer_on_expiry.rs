@@ -1,5 +1,6 @@
 use crate::{Auction, LeafData, RentEscrow, SplAccountCompressionProgramAccount, Data};
 use anchor_lang::{prelude::*, solana_program::system_program};
+use chrono::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
     token::{transfer, Mint, Token, TokenAccount, Transfer, CloseAccount, self},
@@ -108,6 +109,14 @@ pub fn handle_transfer_on_expiry<'info>(
     ctx: Context<'_, '_, '_, 'info, TransferOnExpiryAccounts<'info>>,
     leaf_data: LeafData,
 ) -> Result<()> {
+    
+
+    let expiration_time=DateTime::parse_from_rfc3339(&ctx.accounts.rent_escrow.end_time).unwrap();
+    let expiration_timestamp=expiration_time.timestamp(); 
+    let current_timestamp=Clock::get().unwrap().unix_timestamp; 
+     if expiration_timestamp > current_timestamp {
+        return err!(CustomErrors::InvalidTransferTime);
+    } 
 
     let escrow = &ctx.accounts.rent_escrow;
 
