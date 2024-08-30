@@ -7,7 +7,7 @@ use anchor_spl::{
 use mpl_bubblegum::{instructions::MintToCollectionV1CpiBuilder, types::MetadataArgs};
 use mpl_token_metadata::ID;
 
-use crate::state::*;
+use crate::{state::*, CustomErrors};
 
 #[derive(Clone)]
 pub struct Metadata;
@@ -103,6 +103,20 @@ pub fn handle_mint_rental_token<'info>(
     mint_metadata_args: Vec<u8>,
     leaves_data: u64,
 ) -> Result<()> {
+
+    let rfc3339: DateTime<FixedOffset> = DateTime::parse_from_rfc3339 (&creation_time).unwrap();
+DateTime::parse_from_rfc3339(&creation_time).unwrap();
+let creation_min: u32=rfc3339.time(). minute();
+if creation_min !=0 && creation_min!=30 {
+    msg! ("creation_min {}",creation_min);
+    return err! (CustomErrors:: InvalidTime);
+}
+
+
+let expiration_time: String=rfc3339.checked_add_signed (Duration::minutes (30)).unwrap().to_rfc3339().to_string();
+
+
+
     let expected_cost = ctx.accounts.central_authority.base_cost * leaves_data as u64;
 
     let decimals = ctx.accounts.mint.decimals;
@@ -117,7 +131,7 @@ pub fn handle_mint_rental_token<'info>(
     ctx.accounts.rent_escrow.escrow_bump = [bump];
     ctx.accounts.rent_escrow.expected_cost = expected_cost;
     ctx.accounts.rent_escrow.fee_quota = fee_quota;
-
+    ctx.accounts.rent_escrow.end_time=expiration_time;
     transfer_checked(
         CpiContext::new(
             ctx.accounts.token_program.to_account_info(),

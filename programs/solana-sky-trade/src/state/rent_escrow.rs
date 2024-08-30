@@ -4,6 +4,7 @@ use anchor_lang::prelude::*;
 pub struct RentEscrow {
     pub land_asset_id: Pubkey,
     pub creation_time: String,
+    pub end_time:String,
     pub expected_cost: u64,
     pub fee_quota: u64,
     pub escrow_bump: [u8; 1],
