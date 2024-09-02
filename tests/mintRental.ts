@@ -211,7 +211,7 @@ describe("solana-sky-trade", () => {
 
     umi.use(signerIdentity(callersigner));
 
-    let dateNow = new Date().toISOString(); //'2024-08-26T19:25:12.738Z'
+    let dateNow = '2024-09-01T05:30:33.937Z' //new Date().toISOString(); //'2024-08-26T19:25:12.738Z'
     console.log({ dateNow });
 
     let [rent_escrow, bump] = anchor.web3.PublicKey.findProgramAddressSync(
