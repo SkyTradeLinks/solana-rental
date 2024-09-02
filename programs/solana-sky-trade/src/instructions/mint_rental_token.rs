@@ -101,7 +101,6 @@ pub fn handle_mint_rental_token<'info>(
     creation_time: String,
     bump: u8,
     mint_metadata_args: Vec<u8>,
-    leaves_data: u64,
 ) -> Result<()> {
 
     let rfc3339: DateTime<FixedOffset> = DateTime::parse_from_rfc3339 (&creation_time).unwrap();
@@ -117,7 +116,7 @@ let expiration_time: String=rfc3339.checked_add_signed (Duration::minutes (30)).
 
 
 
-    let expected_cost = ctx.accounts.central_authority.base_cost * leaves_data as u64;
+    let expected_cost = ctx.accounts.central_authority.base_cost * 1 as u64;
 
     let decimals = ctx.accounts.mint.decimals;
 

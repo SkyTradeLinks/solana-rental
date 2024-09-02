@@ -224,15 +224,13 @@ describe("solana-sky-trade", () => {
       owner: rent_escrow,
     });
 
-    let leavesDataLength = new anchor.BN(leavesData.length);
 
     let ix = await program.methods
       .mintRentalToken(
         landAssetId,
         dateNow,
         bump,
-        Buffer.from(metadataBuffer),
-        leavesDataLength
+        Buffer.from(metadataBuffer)
       )
       .accountsStrict({
         centralAuthority: centralAuthority,
@@ -286,7 +284,7 @@ describe("solana-sky-trade", () => {
     transactionV0.sign([caller, centralizedAccount]);
     //console.log({txsize:getTxSize(transactionV0, centralizedAccount.publicKey)});
 
-    const txId = await provider.connection.sendTransaction(transactionV0);
+    const txId = await provider.connection.sendTransaction(transactionV0).catch((e)=>{console.log("tx error",e)});
     console.log(`https://explorer.solana.com/tx/${txId}?cluster=devnet`);
     let mintSx = txId;
 
@@ -297,7 +295,7 @@ describe("solana-sky-trade", () => {
 
       while (i < 6) {
         console.log(mintSx);
-        const tx0 = await umi.rpc.getTransaction(decode(mintSx), {
+        const tx0 = await umi.rpc.getTransaction(decode(mintSx as string), {
           commitment: "confirmed",
         });
 
