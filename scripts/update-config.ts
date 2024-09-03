@@ -14,12 +14,18 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
 
 (async () => {
   // input private key here
+  console.log("centralized acc ",process.env.CENTRALIZED_ACCOUNT)
+
   let centralizedAccount = loadKeyPair(process.env.CENTRALIZED_ACCOUNT);
 
   const wallet = new anchor.Wallet(centralizedAccount);
 
   // input connection uri
   const connection = new Connection(process.env.CONNECTION_URI);
+
+  let auctionProgram = new anchor.web3.PublicKey(
+    process.env.AH_PROGRAM_ADDRESS
+  );
 
   const provider = new anchor.AnchorProvider(connection, wallet, {});
   anchor.setProvider(provider);
@@ -97,15 +103,15 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
     .updateConfig({
       baseCost,
       adminQuota,
-      merkleTreeAddress: newMerkleTree,
       multiplier: null,
       feeAccount,
+      auctionHouseAddress: auctionProgram,
     })
-    .accounts({
-      centralAuthority: centralAuthority,
+    .accountsStrict({
+      centralAuthority,
       centralizedAccount: centralizedAccount.publicKey,
-      systemProgram: anchor.web3.SystemProgram.programId,
       mintAccount: mintAccount,
+      systemProgram: anchor.web3.SystemProgram.programId,
     })
     .instruction();
 

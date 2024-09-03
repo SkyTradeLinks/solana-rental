@@ -7,7 +7,6 @@ import {
   validateTxExecution,
 } from "../helper";
 import {
-  AddressLookupTableProgram,
   Connection,
   NONCE_ACCOUNT_LENGTH,
   PublicKey,
@@ -50,6 +49,7 @@ import {
 
   // input private key here
   let centralizedAccount = loadKeyPair(process.env.CENTRALIZED_ACCOUNT);
+  let auctionProgram = loadKeyPair(process.env.AH_PROGRAM_ADDRESS);
 
   const wallet = new anchor.Wallet(centralizedAccount);
 
@@ -114,7 +114,9 @@ import {
     await fetchMerkleTree(umi, publicKey(landMerkleTree.publicKey));
   } catch (err) {
     if (err.name == AccountNotFoundError.name) {
-      await (
+      console.log({err})
+
+      /* await (
         await createTree(umi, {
           merkleTree: createSignerFromKeypair(umi, {
             secretKey: landMerkleTree.secretKey,
@@ -124,7 +126,7 @@ import {
           maxBufferSize: merkleTreeBufferSize,
           canopyDepth: merkleTreeCanopyDepth,
         })
-      ).sendAndConfirm(umi);
+      ).sendAndConfirm(umi); */
     } else {
       throw err;
     }
@@ -134,7 +136,8 @@ import {
     await fetchMerkleTree(umi, publicKey(rentalMerkleTree.publicKey));
   } catch (err) {
     if (err.name == AccountNotFoundError.name) {
-      await (
+      console.log({err})
+      /* await (
         await createTree(umi, {
           merkleTree: createSignerFromKeypair(umi, {
             secretKey: rentalMerkleTree.secretKey,
@@ -144,7 +147,7 @@ import {
           maxBufferSize: merkleTreeBufferSize,
           canopyDepth: merkleTreeCanopyDepth,
         })
-      ).sendAndConfirm(umi);
+      ).sendAndConfirm(umi); */
     } else {
       throw err;
     }
@@ -166,6 +169,7 @@ import {
   );
 
   if (!rentalCollectionData.exists) {
+    console.log("no rental collection")
     let offChainMetadata = {
       name: "RENTAL Collection",
       symbol: "R-NFT",
@@ -194,6 +198,7 @@ import {
 
 
   if (!landCollectionData.exists) {
+    console.log("no land collection")
     let offChainMetadata = {
       name: "LAND Collection",
       symbol: "L-NFT",
@@ -221,11 +226,12 @@ import {
 
     let ix = await program.methods
       .initialize()
-      .accounts({
+      .accountsStrict({
         payer: centralizedAccount.publicKey,
-        // centralAuthority: centralAuthority,
+        centralAuthority: centralAuthority,
         mintAccount: mintAccount,
-        // systemProgram: anchor.web3.SystemProgram.programId,
+        systemProgram: anchor.web3.SystemProgram.programId,
+        auctionHouseAddress: auctionProgram.publicKey,
         feeAccount: feeAta.address,
       })
       .instruction();
@@ -243,6 +249,7 @@ import {
   let account = await umi.rpc.getAccount(publicKey(nonceAccount.publicKey));
 
   if (!account.exists) {
+    console.log("no nonce acc")
     let tx = new anchor.web3.Transaction().add(
       // create nonce account
       SystemProgram.createAccount({
@@ -281,7 +288,7 @@ import {
     }
   }
 
-  let lookupTableAddress = new PublicKey(process.env.LOOKUP_TABLE);
+  /* let lookupTableAddress = new PublicKey(process.env.LOOKUP_TABLE);
 
   const lookupTableAccount = (
     await connection.getAddressLookupTable(lookupTableAddress)
@@ -323,5 +330,5 @@ import {
     );
   }
 
-  console.log("successfully initialized ");
+  console.log("successfully initialized "); */
 })();

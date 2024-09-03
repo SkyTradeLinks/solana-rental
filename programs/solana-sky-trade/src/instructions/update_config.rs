@@ -23,7 +23,7 @@ pub struct UpdateConfigPayload<'info> {
 pub struct UpdateConfigData {
     pub base_cost: Option<f64>,
     pub admin_quota: Option<f64>,
-    pub merkle_tree_address: Option<Pubkey>,
+    pub auction_house_address: Option<Pubkey>,
     pub multiplier: Option<f64>,
     pub fee_account: Option<Pubkey>,
 }
@@ -34,7 +34,7 @@ pub fn handle_update_config(
 ) -> Result<()> {
     if ctx.accounts.central_authority.centralized_account != ctx.accounts.centralized_account.key()
     {
-        return err!(MyError::InvalidAuthority);
+        return err!(CustomErrors::InvalidAuthority);
     }
 
     match payload.base_cost {
@@ -48,6 +48,13 @@ pub fn handle_update_config(
     match payload.admin_quota {
         Some(value) => {
             ctx.accounts.central_authority.admin_quota = value;
+        }
+        None => {}
+    }
+
+    match payload.auction_house_address {
+        Some(value) => {
+            ctx.accounts.central_authority.auction_house_address = value;
         }
         None => {}
     }

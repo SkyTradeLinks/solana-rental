@@ -8,10 +8,11 @@ pub use errors::*;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("iigWsJNPFmhfooDURKmZQrrxZbdA5GAnKDeJjcd2WGA");
+declare_id!("DBp4vLTJM9UpAwYKFN5Hb5zU1ou8mPUwB3CinoST65x5");
 
 #[program]
 pub mod solana_sky_trade {
+
     use super::*;
 
     pub fn initialize(ctx: Context<InitializePayload>) -> Result<()> {
@@ -20,10 +21,28 @@ pub mod solana_sky_trade {
 
     pub fn mint_rental_token<'info>(
         ctx: Context<'_, '_, '_, 'info, MintRentalTokenPayload<'info>>,
+        land_asset_id: Pubkey,
+        creation_time: String,
+        bump: u8,
         mint_metadata_args: Vec<u8>,
-        leaves_data: Vec<LeafData>,
+        leaves_data: u64,
     ) -> Result<()> {
-        handle_mint_rental_token(ctx, mint_metadata_args, leaves_data)
+        handle_mint_rental_token(
+            ctx,
+            land_asset_id,
+            creation_time,
+            bump,
+            mint_metadata_args,
+            leaves_data,
+        )
+    }
+
+    pub fn transfer_on_expiry<'info>(
+        ctx: Context<'_, '_, '_, 'info, TransferOnExpiryAccounts<'info>>,
+        leaf: LeafData,
+    ) -> Result<()> {
+        msg!("starting transfer");
+        handle_transfer_on_expiry(ctx, leaf)
     }
 
     pub fn update_config(

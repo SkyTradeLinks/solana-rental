@@ -176,6 +176,23 @@ export const createTxWithNonce = async (
   return [tx, nonceAccount];
 };
 
+export const createNonceIx = async (
+  connection: anchor.web3.Connection,
+  nonceAccountPubkey: anchor.web3.PublicKey,
+  centralizedAccountPubkey: anchor.web3.PublicKey
+): Promise<[TransactionInstruction, NonceAccount]> => {
+  let nonceAccountInfo = await connection.getAccountInfo(nonceAccountPubkey);
+  let nonceAccount = NonceAccount.fromAccountData(nonceAccountInfo.data);
+
+
+  let ix=SystemProgram.nonceAdvance({
+    noncePubkey: nonceAccountPubkey,
+    authorizedPubkey: centralizedAccountPubkey,
+  })
+
+  return [ix, nonceAccount];
+};
+
 export const getPriorityFeeIx = async (connection: anchor.web3.Connection) => {
   let fees = await connection.getRecentPrioritizationFees();
   let maxPrioritizationFee = fees.reduce((max, cur) => {

@@ -6,9 +6,10 @@ pub struct Data {
     pub centralized_account: Pubkey,
     pub base_cost: u64,
     pub admin_quota: f64,
+    pub auction_house_address: Pubkey,
     pub fee_account: Pubkey,
 }
 
 impl Data {
-    pub const MAX_SIZE: usize = 1024 * 5;
+    pub const MAX_SIZE: usize = 8 + 1 + 32 + 8 + 8 + 32 + 32;
 }

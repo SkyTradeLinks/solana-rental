@@ -22,6 +22,9 @@ pub struct InitializePayload<'info> {
     /// CHECK: This account is checked in the instruction
     pub fee_account: AccountInfo<'info>,
 
+    /// CHECK: This account is checked in the instruction
+    pub auction_house_address: AccountInfo<'info>,
+
     pub system_program: Program<'info, System>,
 
     pub mint_account: Account<'info, Mint>,
@@ -29,7 +32,7 @@ pub struct InitializePayload<'info> {
 
 pub fn handle_initialize(ctx: Context<InitializePayload>) -> Result<()> {
     if ctx.accounts.central_authority.initialized {
-        return err!(MyError::AlreadyInitialized);
+        return err!(CustomErrors::AlreadyInitialized);
     }
 
     let data = &mut ctx.accounts.central_authority;
@@ -43,6 +46,9 @@ pub fn handle_initialize(ctx: Context<InitializePayload>) -> Result<()> {
 
     // Admin Quota: 30%
     data.admin_quota = 0.3;
+
+    // Auction House program ID
+    data.auction_house_address = ctx.accounts.auction_house_address.key();
 
     // Fee Account
     data.fee_account = ctx.accounts.fee_account.key();
