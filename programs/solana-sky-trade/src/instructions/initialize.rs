@@ -47,7 +47,7 @@ pub fn handle_initialize(ctx: Context<InitializePayload>) -> Result<()> {
     // Admin Quota: 30%
     data.admin_quota = 0.3;
 
-    // Rental Merkle Tree Address
+    // Auction House program ID
     data.auction_house_address = ctx.accounts.auction_house_address.key();
 
     // Fee Account
