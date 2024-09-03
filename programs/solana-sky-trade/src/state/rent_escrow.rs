@@ -11,7 +11,7 @@ pub struct RentEscrow {
 }
 
 impl RentEscrow {
-    pub const MAX_SIZE: usize = 32 + 24 + 1;
+    pub const MAX_SIZE: usize = 32 + 24+24+8+8 + 1;
 
     pub fn escrow_seeds(&self) -> [&[u8]; 4] {
         [
