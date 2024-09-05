@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::{create, get_associated_token_address, AssociatedToken, Create},
-    token::{transfer_checked, Mint, Token, TokenAccount, TransferChecked},
+    token_interface::{transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked},
 };
 
 use mpl_bubblegum::{instructions::MintToCollectionV1CpiBuilder, types::MetadataArgs};
@@ -16,7 +16,7 @@ pub struct MintRentalTokenPayload<'info> {
         )]
     pub central_authority: Box<Account<'info, Data>>,
 
-    pub mint: Account<'info, Mint>,
+    pub mint: InterfaceAccount<'info, Mint>,
 
     #[account(mut)]
     pub centralized_account: Signer<'info>,
@@ -27,7 +27,7 @@ pub struct MintRentalTokenPayload<'info> {
         associated_token::mint = mint,
         associated_token::authority = centralized_account
     )]
-    pub centralized_account_ata: Box<Account<'info, TokenAccount>>,
+    pub centralized_account_ata: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(mut)]
     pub caller: Signer<'info>,
@@ -38,7 +38,7 @@ pub struct MintRentalTokenPayload<'info> {
         associated_token::mint = mint,
         associated_token::authority = caller
     )]
-    pub caller_ata: Box<Account<'info, TokenAccount>>,
+    pub caller_ata: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// CHECK: This account is checked in the instruction
     #[account(mut)]
@@ -78,7 +78,7 @@ pub struct MintRentalTokenPayload<'info> {
     pub compression_program: UncheckedAccount<'info>,
     pub system_program: Program<'info, System>,
     pub associated_token_program: Program<'info, AssociatedToken>,
-    pub token_program: Program<'info, Token>,
+    pub token_program: Interface<'info, TokenInterface>,
 
     /// CHECK: This account is checked in the instruction
     pub token_metadata_program: UncheckedAccount<'info>,
