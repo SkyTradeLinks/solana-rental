@@ -36,14 +36,17 @@ import { associatedAddress } from "@coral-xyz/anchor/dist/cjs/utils/token";
 import { SYSTEM_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/native/system";
 
 const landAssetId = new PublicKey(
-  "HD6m5GvQRaugE6a4ZAzqL5hB3GqMYLeVvw5CAYktkca4"
+  "7gyD7j1seeJAWrh24HvC6fxXWcXGjuseUzsmkooNt99d"
 );
 
 describe("solana-sky-trade", () => {
+
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
 
   const program = anchor.workspace.SolanaSkyTrade as Program<SolanaSkyTrade>;
+
+  console.log(program.programId)
 
   const umi = createUmi(provider.connection.rpcEndpoint)
     .use(mplBubblegum())
@@ -97,9 +100,13 @@ describe("solana-sky-trade", () => {
     let dateNow = "2024-08-29T21:17:00.831Z"; //'2024-08-26T19:25:12.738Z'
     console.log({ dateNow });
 
-    let [rent_escrow, bump] = anchor.web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("escrow"), landAssetId.toBytes(), Buffer.from(dateNow)],
-      program.programId
+    // let [rent_escrow, bump] = anchor.web3.PublicKey.findProgramAddressSync(
+    //   [Buffer.from("escrow"), landAssetId.toBytes(), Buffer.from(dateNow)],
+    //   program.programId
+    // );
+
+    const rent_escrow = new PublicKey(
+      "6yopZCvCkHattAy4BEhTAjYmxMPShvjRUvUgbfeJXcjJ"
     );
 
     const rent_escrow_Ata = associatedAddress({

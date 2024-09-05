@@ -193,7 +193,7 @@ pub fn handle_transfer_on_expiry<'info>(
         final_payment,
     )?;
 
-    //close offer ata
+    // close offer ata
     token::close_account(
         ctx.accounts
             .close_ata_context()

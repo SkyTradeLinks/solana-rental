@@ -49,7 +49,7 @@ import {
 
   // input private key here
   let centralizedAccount = loadKeyPair(process.env.CENTRALIZED_ACCOUNT);
-  let auctionProgram = loadKeyPair(process.env.AH_PROGRAM_ADDRESS);
+  let auctionProgram = new PublicKey(process.env.AH_PROGRAM_ADDRESS);
 
   const wallet = new anchor.Wallet(centralizedAccount);
 
@@ -231,7 +231,7 @@ import {
         centralAuthority: centralAuthority,
         mintAccount: mintAccount,
         systemProgram: anchor.web3.SystemProgram.programId,
-        auctionHouseAddress: auctionProgram.publicKey,
+        auctionHouseAddress: auctionProgram,
         feeAccount: feeAta.address,
       })
       .instruction();
