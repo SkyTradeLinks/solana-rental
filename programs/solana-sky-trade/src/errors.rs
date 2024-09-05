@@ -20,6 +20,9 @@ pub enum CustomErrors {
     #[msg("Provided Rental Address is invalid")]
     InvalidRentalAddressPassed,
 
+    #[msg("Provided Rental escrow Address is invalid")]
+    InvalidRentalEscrowAddressPassed,
+
     #[msg("Provided Accounts should be a multiple of 2")]
     InvalidRemainingAccountsPassed,
 

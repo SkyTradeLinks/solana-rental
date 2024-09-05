@@ -1,8 +1,10 @@
-use anchor_lang::prelude::*;
+use anchor_lang::{prelude::*, solana_program::{program::invoke_signed}};
+use anchor_lang::solana_program::system_instruction::create_account;
 use anchor_spl::{
     associated_token::AssociatedToken,
     token::{transfer_checked, Mint, Token, TokenAccount, TransferChecked},
 };
+
 use chrono::*;
 use mpl_bubblegum::{instructions::MintToCollectionV1CpiBuilder, types::MetadataArgs};
 use mpl_token_metadata::ID;
@@ -19,7 +21,7 @@ impl anchor_lang::Id for Metadata {
 }
 
 #[derive(Accounts)]
-#[instruction(land_asset_id:Pubkey,creation_time:String)]
+
 pub struct MintRentalTokenPayload<'info> {
     #[account(
         seeds = [b"central_authority"],
@@ -41,18 +43,10 @@ pub struct MintRentalTokenPayload<'info> {
     )]
     pub caller_ata: Box<Account<'info, TokenAccount>>,
 
-    #[account(
-        init,
-        payer=centralized_account,
-        space=RentEscrow::MAX_SIZE +usize::from(4+creation_time.len()),
-        seeds=[
-            b"escrow",
-            land_asset_id.key().as_ref(),
-            creation_time.as_ref()
-        ],
-        bump
+    #[account(mut,
+        
     )]
-    rent_escrow: Account<'info, RentEscrow>,
+    rent_escrow: UncheckedAccount<'info, RentEscrow>,
 
     #[account(
         init,
@@ -103,6 +97,40 @@ pub fn handle_mint_rental_token<'info>(
     mint_metadata_args: Vec<u8>,
     leaves_data: u64,
 ) -> Result<()> {
+    msg!("passed 1");
+    // #region SAFETY CHECKS
+    let rent_escrow_seeds = 
+        &[
+            b"escrow",
+            land_asset_id.as_ref(),
+            creation_time.as_ref(),
+        ];
+    let (rent_escrow_key, _u_bump_seed) = Pubkey::find_program_address(rent_escrow_seeds, ctx.program_id);
+
+    if ctx.accounts.rent_escrow.key() != rent_escrow_key {
+            msg!("incorrect rent escrow seeds");
+        return err!(CustomErrors::InvalidRentalEscrowAddressPassed);
+    }
+
+    invoke_signed(
+        &create_account(
+            &ctx.accounts.caller.key(),
+            &rent_escrow_key,
+            Rent::get()?.minimum_balance(RentEscrow::MAX_SIZE),
+            RentEscrow::MAX_SIZE as u64,
+            ctx.program_id,
+        ),
+        &[ctx.accounts.caller.to_account_info(), ctx.accounts.system_program.to_account_info(), ctx.accounts.rent_escrow.to_account_info()],
+        &[rent_escrow_seeds],
+    )?;
+
+
+    msg!("passed 2");
+
+
+
+
+
     let rfc3339: DateTime<FixedOffset> = DateTime::parse_from_rfc3339(&creation_time).unwrap();
     DateTime::parse_from_rfc3339(&creation_time).unwrap();
     let creation_min: u32 = rfc3339.time().minute();

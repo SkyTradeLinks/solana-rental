@@ -81,7 +81,7 @@ describe("solana-sky-trade", () => {
 
   umi.use(signerIdentity(authoritySigner));
   // caZUFsSZLD8VK8q652FZm3nZWqq4HFncr4pix8sckYb
-  const caller = loadKeyPair(join(__dirname, "renter.json"));
+  const caller = loadKeyPair(join(__dirname, "../wallets/devnet-keys/caller.json"));
 
   const centralizedAccountAta = getAssociatedTokenAddressSync(
     mintAccount,
@@ -211,7 +211,7 @@ describe("solana-sky-trade", () => {
 
     umi.use(signerIdentity(callersigner));
 
-    let dateNow = new Date().toISOString(); //'2024-08-26T19:25:12.738Z'
+    let dateNow ='2024-08-26T19:31:12.738Z'; //'2024-08-26T19:25:12.738Z'
     console.log({ dateNow });
 
     let [rent_escrow, bump] = anchor.web3.PublicKey.findProgramAddressSync(
@@ -226,6 +226,27 @@ describe("solana-sky-trade", () => {
 
     let leavesDataLength = new anchor.BN(leavesData.length);
 
+    console.log({centralAuthority: centralAuthority,
+      centralizedAccount: centralizedAccount.publicKey,
+      mint: mintAccount, //alt
+      caller: caller.publicKey,
+      callerAta: callerAta,
+      rentalMerkleTree: rentalMerkleTree.publicKey,
+      treeConfig: treeConfig,
+      landMerkleTree: landMerkleTree.publicKey,
+      collectionMint: rentalCollection.publicKey.toString(),
+      collectionEdition,
+      collectionMetadata,
+      bubblegumSigner, //alts
+      bubblegumProgram: MPL_BUBBLEGUM_PROGRAM_ID, //alt
+      logWrapper: SPL_NOOP_PROGRAM_ID, //alt
+      compressionProgram: SPL_ACCOUNT_COMPRESSION_PROGRAM_ID, //alt
+      systemProgram: anchor.web3.SystemProgram.programId, //alt
+      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID, //alt
+      tokenProgram: TOKEN_PROGRAM_ID, //alt
+      tokenMetadataProgram: MPL_TOKEN_METADATA_PROGRAM_ID, //alt
+      rentEscrow: rent_escrow,
+      rentEscrowAta: rent_escrow_Ata,})
     let ix = await program.methods
       .mintRentalToken(
         landAssetId,
@@ -272,21 +293,22 @@ describe("solana-sky-trade", () => {
     );
 
     // get the table from the cluster
-    const lookupTableAccount = (
-      await provider.connection.getAddressLookupTable(AltAddress)
-    ).value;
+  
     const messageV0 = new TransactionMessage({
       payerKey: centralizedAccount.publicKey,
       recentBlockhash: blockhash,
       instructions: [ix],
-    }).compileToV0Message([lookupTableAccount]);
+    }).compileToV0Message();
 
     const transactionV0 = new VersionedTransaction(messageV0);
-
-    transactionV0.sign([caller, centralizedAccount]);
+    console.log({signatures:transactionV0.signatures})
+     transactionV0.sign([caller, centralizedAccount]);
+     
     //console.log({txsize:getTxSize(transactionV0, centralizedAccount.publicKey)});
 
-    const txId = await provider.connection.sendTransaction(transactionV0);
+    const txId = await provider.connection.sendTransaction(transactionV0).catch((err)=>{
+      console.log("error is ",err)
+    });
     console.log(`https://explorer.solana.com/tx/${txId}?cluster=devnet`);
     let mintSx = txId;
 
@@ -295,7 +317,7 @@ describe("solana-sky-trade", () => {
 
       let i = 0;
 
-      while (i < 6) {
+      /* while (i < 6) {
         console.log(mintSx);
         const tx0 = await umi.rpc.getTransaction(decode(mintSx), {
           commitment: "confirmed",
@@ -310,9 +332,9 @@ describe("solana-sky-trade", () => {
         await sleep(1000 * i);
 
         i++;
-      }
+      } */
     } catch (err) {
       console.log(err);
     }
-  });
+  }); 
 });

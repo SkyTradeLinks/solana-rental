@@ -60,7 +60,7 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
   let baseCost = null;
 
   if (parseFloat(process.env.NEW_PRICE)) {
-    baseCost = parseFloat(process.env.NEW_PRICE);
+    baseCost = parseFloat(process.env.NEW_PRICE );
   }
 
   let adminQuota = null;
@@ -69,15 +69,7 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
     adminQuota = parseFloat(process.env.ADMIN_QUOTA);
   }
 
-  let newMerkleTree = null;
 
-  if (process.env.NEW_MERKLE_TREE) {
-    try {
-      newMerkleTree = new anchor.web3.PublicKey(process.env.NEW_MERKLE_TREE);
-    } catch (err) {
-      throw "Invalid Address Provided";
-    }
-  }
 
   let feeAccount = null;
 
@@ -127,7 +119,7 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
   tx.feePayer = centralizedAccount.publicKey;
   tx.sign(centralizedAccount);
 
-  let sx = await provider.connection.sendRawTransaction(tx.serialize());
+  let sx = await provider.connection.sendRawTransaction(tx.serialize())
 
   await validateTxExecution(sx, umi);
 

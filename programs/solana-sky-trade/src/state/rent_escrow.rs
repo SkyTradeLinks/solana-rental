@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-#[account]
+#[account(zero_copy)]
 pub struct RentEscrow {
     pub land_asset_id: Pubkey,
     pub creation_time: String,
@@ -11,7 +11,7 @@ pub struct RentEscrow {
 }
 
 impl RentEscrow {
-    pub const MAX_SIZE: usize = 32 + 24 + 1;
+    pub const MAX_SIZE: usize = 32 + 28+28+8+8 + 1;
 
     pub fn escrow_seeds(&self) -> [&[u8]; 4] {
         [
