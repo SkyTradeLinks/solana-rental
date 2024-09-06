@@ -100,13 +100,9 @@ describe("solana-sky-trade", () => {
     let dateNow = "2024-08-29T21:17:00.831Z"; //'2024-08-26T19:25:12.738Z'
     console.log({ dateNow });
 
-    // let [rent_escrow, bump] = anchor.web3.PublicKey.findProgramAddressSync(
-    //   [Buffer.from("escrow"), landAssetId.toBytes(), Buffer.from(dateNow)],
-    //   program.programId
-    // );
-
-    const rent_escrow = new PublicKey(
-      "6yopZCvCkHattAy4BEhTAjYmxMPShvjRUvUgbfeJXcjJ"
+    let [rent_escrow, bump] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("escrow"), landAssetId.toBytes(), Buffer.from(dateNow)],
+      program.programId
     );
 
     const rent_escrow_Ata = associatedAddress({
