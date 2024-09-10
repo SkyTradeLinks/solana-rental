@@ -4,14 +4,14 @@ use anchor_lang::prelude::*;
 pub struct RentEscrow {
     pub land_asset_id: Pubkey,
     pub creation_time: String,
-    pub end_time:String,
+    pub end_time: String,
     pub expected_cost: u64,
     pub fee_quota: u64,
     pub escrow_bump: [u8; 1],
 }
 
 impl RentEscrow {
-    pub const MAX_SIZE: usize = 32 + 24 + 1;
+    pub const MAX_SIZE: usize = 8 + 32 + 28 + 28 + 8 + 8 + 1;
 
     pub fn escrow_seeds(&self) -> [&[u8]; 4] {
         [

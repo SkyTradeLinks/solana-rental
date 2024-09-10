@@ -36,14 +36,17 @@ import { associatedAddress } from "@coral-xyz/anchor/dist/cjs/utils/token";
 import { SYSTEM_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/native/system";
 
 const landAssetId = new PublicKey(
-  "HD6m5GvQRaugE6a4ZAzqL5hB3GqMYLeVvw5CAYktkca4"
+  "7gyD7j1seeJAWrh24HvC6fxXWcXGjuseUzsmkooNt99d"
 );
 
 describe("solana-sky-trade", () => {
+
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
 
   const program = anchor.workspace.SolanaSkyTrade as Program<SolanaSkyTrade>;
+
+  console.log(program.programId)
 
   const umi = createUmi(provider.connection.rpcEndpoint)
     .use(mplBubblegum())

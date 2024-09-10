@@ -8,7 +8,7 @@ pub use errors::*;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("DBp4vLTJM9UpAwYKFN5Hb5zU1ou8mPUwB3CinoST65x5");
+declare_id!("rentg99tRH7uhh1eZ8Gbfej6LGLBxwuo4jVjL9vvsH2");
 
 #[program]
 pub mod solana_sky_trade {
@@ -45,10 +45,11 @@ pub mod solana_sky_trade {
         handle_transfer_on_expiry(ctx, leaf)
     }
 
-    pub fn update_config(
-        ctx: Context<UpdateConfigPayload>,
-        payload: UpdateConfigData,
+    pub fn update_config<'info>(
+        ctx: Context<'_, '_, '_, 'info, UpdateConfigPayload<'info>>,
+        data: UpdateConfigData,
     ) -> Result<()> {
-        handle_update_config(ctx, payload)
+        msg!("updating config");
+        handle_update_config(ctx, data)
     }
 }

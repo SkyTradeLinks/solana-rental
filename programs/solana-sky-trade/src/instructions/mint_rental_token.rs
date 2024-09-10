@@ -44,7 +44,7 @@ pub struct MintRentalTokenPayload<'info> {
     #[account(
         init,
         payer=centralized_account,
-        space=RentEscrow::MAX_SIZE +usize::from(4+creation_time.len()),
+        space=RentEscrow::MAX_SIZE,
         seeds=[
             b"escrow",
             land_asset_id.key().as_ref(),
@@ -114,7 +114,7 @@ pub fn handle_mint_rental_token<'info>(
     let expiration_time: String = rfc3339
         .checked_add_signed(Duration::minutes(30))
         .unwrap()
-        .to_rfc3339()
+        .format("%Y-%m-%dT%H:%M:%S%.3fZ")
         .to_string();
 
     let expected_cost = ctx.accounts.central_authority.base_cost * leaves_data as u64;
@@ -132,6 +132,7 @@ pub fn handle_mint_rental_token<'info>(
     ctx.accounts.rent_escrow.expected_cost = expected_cost;
     ctx.accounts.rent_escrow.fee_quota = fee_quota;
     ctx.accounts.rent_escrow.end_time = expiration_time;
+
     transfer_checked(
         CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
@@ -146,9 +147,7 @@ pub fn handle_mint_rental_token<'info>(
         decimals,
     )?;
 
-    msg!("decimal {}", decimals);
-    msg!("expected cost {}", expected_cost);
-    let ans = MintToCollectionV1CpiBuilder::new(&ctx.accounts.bubblegum_program.to_account_info())
+    MintToCollectionV1CpiBuilder::new(&ctx.accounts.bubblegum_program.to_account_info())
         .tree_config(&ctx.accounts.tree_config.to_account_info())
         .leaf_owner(&ctx.accounts.caller.to_account_info())
         .leaf_delegate(&ctx.accounts.centralized_account.to_account_info())
@@ -167,7 +166,6 @@ pub fn handle_mint_rental_token<'info>(
         .metadata(mint_metadata)
         .invoke()?;
     // .invoke_signed(signer_seeds)?;
-    msg!("ans {:?}", ans);
 
     Ok(())
 }
