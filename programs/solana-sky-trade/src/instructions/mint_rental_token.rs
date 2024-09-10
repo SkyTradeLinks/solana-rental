@@ -1,10 +1,11 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
-    associated_token::{create, get_associated_token_address, AssociatedToken, Create},
+    associated_token::{create, AssociatedToken, Create},
     token_interface::{transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked},
 };
 
 use mpl_bubblegum::{instructions::MintToCollectionV1CpiBuilder, types::MetadataArgs};
+use spl_associated_token_account::get_associated_token_address_with_program_id;
 
 use crate::{errors::*, state::*, LeafData};
 
@@ -97,9 +98,10 @@ pub fn handle_mint_rental_token<'info>(
         return err!(MyError::InvalidAuthority);
     }
 
-    let expected_fee_ata = get_associated_token_address(
+    let expected_fee_ata = get_associated_token_address_with_program_id(
         &ctx.accounts.central_authority.fee_account,
         &ctx.accounts.mint.key(),
+        &ctx.accounts.token_program.key(),
     );
 
     if expected_fee_ata != ctx.accounts.fee_account_ata.key() {
@@ -129,7 +131,11 @@ pub fn handle_mint_rental_token<'info>(
         let land_owner = next_account_info(accounts)?;
         let land_owner_ata = next_account_info(accounts)?;
 
-        let expected_ata = get_associated_token_address(land_owner.key, &ctx.accounts.mint.key());
+        let expected_ata = get_associated_token_address_with_program_id(
+            land_owner.key,
+            &ctx.accounts.mint.key(),
+            &ctx.accounts.token_program.key(),
+        );
 
         let leaf_data = &leaves_data[index];
 
