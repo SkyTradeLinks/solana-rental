@@ -185,6 +185,18 @@ pub fn handle_mint_rental_token<'info>(
 
     let decimals = ctx.accounts.mint.decimals;
 
+    msg!(
+        "program mint {} {}",
+        ctx.accounts.token_program.key(),
+        ctx.accounts.mint.key()
+    );
+
+    msg!(
+        "atas 1 {} {}",
+        ctx.accounts.caller_ata.key(),
+        ctx.accounts.centralized_account_ata.key()
+    );
+
     transfer_checked(
         CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
@@ -205,6 +217,12 @@ pub fn handle_mint_rental_token<'info>(
 
     // Transfer To Land Owner
     for ata in nft_atas.iter() {
+        msg!(
+            "atas 2 {} {}",
+            ctx.accounts.centralized_account_ata.key(),
+            ata.key()
+        );
+
         transfer_checked(
             CpiContext::new(
                 ctx.accounts.token_program.to_account_info(),
@@ -222,6 +240,12 @@ pub fn handle_mint_rental_token<'info>(
 
     let fee_quota = ctx.accounts.central_authority.admin_quota * (expected_cost as f64);
     let fee_quota = fee_quota as u64;
+
+    msg!(
+        "atas 3 {} {}",
+        ctx.accounts.centralized_account_ata.key(),
+        ctx.accounts.fee_account_ata.key()
+    );
 
     // Transfer To Fee Account
     transfer_checked(

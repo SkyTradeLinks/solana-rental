@@ -33,6 +33,7 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
   getOrCreateAssociatedTokenAccount,
+  TOKEN_2022_PROGRAM_ID,
 } from "@solana/spl-token";
 import {
   createNft,
@@ -107,7 +108,9 @@ import {
     provider.connection,
     centralizedAccount,
     mintAccount,
-    feeAccount
+    feeAccount, 
+    undefined, undefined, undefined,
+    TOKEN_2022_PROGRAM_ID
   );
 
   try {
@@ -226,7 +229,7 @@ import {
         // centralAuthority: centralAuthority,
         mintAccount: mintAccount,
         // systemProgram: anchor.web3.SystemProgram.programId,
-        feeAccount: feeAta.address,
+        feeAccount: feeAccount,
       })
       .instruction();
 
@@ -240,88 +243,88 @@ import {
     console.log(err);
   }
 
-  let account = await umi.rpc.getAccount(publicKey(nonceAccount.publicKey));
+  // let account = await umi.rpc.getAccount(publicKey(nonceAccount.publicKey));
 
-  if (!account.exists) {
-    let tx = new anchor.web3.Transaction().add(
-      // create nonce account
-      SystemProgram.createAccount({
-        fromPubkey: centralizedAccount.publicKey,
-        newAccountPubkey: nonceAccount.publicKey,
-        lamports: await provider.connection.getMinimumBalanceForRentExemption(
-          NONCE_ACCOUNT_LENGTH
-        ),
-        space: NONCE_ACCOUNT_LENGTH,
-        programId: SystemProgram.programId,
-      }),
-      // init nonce account
-      SystemProgram.nonceInitialize({
-        noncePubkey: nonceAccount.publicKey, // nonce account pubkey
-        authorizedPubkey: centralizedAccount.publicKey, // nonce account authority (for advance and close)
-      })
-    );
+  // if (!account.exists) {
+  //   let tx = new anchor.web3.Transaction().add(
+  //     // create nonce account
+  //     SystemProgram.createAccount({
+  //       fromPubkey: centralizedAccount.publicKey,
+  //       newAccountPubkey: nonceAccount.publicKey,
+  //       lamports: await provider.connection.getMinimumBalanceForRentExemption(
+  //         NONCE_ACCOUNT_LENGTH
+  //       ),
+  //       space: NONCE_ACCOUNT_LENGTH,
+  //       programId: SystemProgram.programId,
+  //     }),
+  //     // init nonce account
+  //     SystemProgram.nonceInitialize({
+  //       noncePubkey: nonceAccount.publicKey, // nonce account pubkey
+  //       authorizedPubkey: centralizedAccount.publicKey, // nonce account authority (for advance and close)
+  //     })
+  //   );
 
-    let blockhash = (await provider.connection.getLatestBlockhash("finalized"))
-      .blockhash;
+  //   let blockhash = (await provider.connection.getLatestBlockhash("finalized"))
+  //     .blockhash;
 
-    tx.recentBlockhash = blockhash;
-    tx.feePayer = centralizedAccount.publicKey;
+  //   tx.recentBlockhash = blockhash;
+  //   tx.feePayer = centralizedAccount.publicKey;
 
-    tx.partialSign(centralizedAccount);
-    tx.partialSign(nonceAccount);
+  //   tx.partialSign(centralizedAccount);
+  //   tx.partialSign(nonceAccount);
 
-    let signature = await provider.connection.sendRawTransaction(
-      tx.serialize()
-    );
+  //   let signature = await provider.connection.sendRawTransaction(
+  //     tx.serialize()
+  //   );
 
-    let txInfo = await validateTxExecution(signature, umi);
+  //   let txInfo = await validateTxExecution(signature, umi);
 
-    if (txInfo != null) {
-      // console.log(txInfo);
-    }
-  }
+  //   if (txInfo != null) {
+  //     // console.log(txInfo);
+  //   }
+  // }
 
-  let lookupTableAddress = new PublicKey(process.env.LOOKUP_TABLE);
+  // let lookupTableAddress = new PublicKey(process.env.LOOKUP_TABLE);
 
-  const lookupTableAccount = (
-    await connection.getAddressLookupTable(lookupTableAddress)
-  ).value;
+  // const lookupTableAccount = (
+  //   await connection.getAddressLookupTable(lookupTableAddress)
+  // ).value;
 
-  // noop must not be in a lookup table
-  let addressesToAdd = [
-    centralizedAccount.publicKey,
-    centralAuthority,
-    rentalMerkleTree.publicKey,
-    TOKEN_PROGRAM_ID,
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    new PublicKey(MPL_TOKEN_METADATA_PROGRAM_ID),
-    new PublicKey(MPL_BUBBLEGUM_PROGRAM_ID),
-    SystemProgram.programId,
-  ];
+  // // noop must not be in a lookup table
+  // let addressesToAdd = [
+  //   centralizedAccount.publicKey,
+  //   centralAuthority,
+  //   rentalMerkleTree.publicKey,
+  //   TOKEN_PROGRAM_ID,
+  //   ASSOCIATED_TOKEN_PROGRAM_ID,
+  //   new PublicKey(MPL_TOKEN_METADATA_PROGRAM_ID),
+  //   new PublicKey(MPL_BUBBLEGUM_PROGRAM_ID),
+  //   SystemProgram.programId,
+  // ];
 
-  addressesToAdd = addressesToAdd.filter((el) => {
-    const isInLookupTable = lookupTableAccount.state.addresses.some(
-      (innerEl) => innerEl.toString() === el.toString()
-    );
+  // addressesToAdd = addressesToAdd.filter((el) => {
+  //   const isInLookupTable = lookupTableAccount.state.addresses.some(
+  //     (innerEl) => innerEl.toString() === el.toString()
+  //   );
 
-    return !isInLookupTable;
-  });
+  //   return !isInLookupTable;
+  // });
 
-  if (addressesToAdd.length > 0) {
-    const extendInstruction = AddressLookupTableProgram.extendLookupTable({
-      payer: centralizedAccount.publicKey,
-      authority: centralizedAccount.publicKey,
-      lookupTable: lookupTableAddress,
-      addresses: addressesToAdd,
-    });
+  // if (addressesToAdd.length > 0) {
+  //   const extendInstruction = AddressLookupTableProgram.extendLookupTable({
+  //     payer: centralizedAccount.publicKey,
+  //     authority: centralizedAccount.publicKey,
+  //     lookupTable: lookupTableAddress,
+  //     addresses: addressesToAdd,
+  //   });
 
-    await sendTx(
-      [extendInstruction],
-      centralizedAccount,
-      provider.connection,
-      umi
-    );
-  }
+  //   await sendTx(
+  //     [extendInstruction],
+  //     centralizedAccount,
+  //     provider.connection,
+  //     umi
+  //   );
+  // }
 
   console.log("successfully initialized ");
 })();

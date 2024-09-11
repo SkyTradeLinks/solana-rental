@@ -10,7 +10,7 @@ import {
   signerIdentity,
 } from "@metaplex-foundation/umi";
 import "dotenv/config";
-import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
+import { getOrCreateAssociatedTokenAccount, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 
 (async () => {
   // input private key here
@@ -73,22 +73,22 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
     }
   }
 
-  let feeAccount = null;
-
+  let feeAccount = new anchor.web3.PublicKey(process.env.FEE_ACCOUNT);
+  console.log({feeAccount})
   if (process.env.FEE_ACCOUNT) {
-    try {
-      feeAccount = new anchor.web3.PublicKey(process.env.FEE_ACCOUNT);
+    // try {
+    //   feeAccount = new anchor.web3.PublicKey(process.env.FEE_ACCOUNT);
 
-      // needs to have ata address (USDC) before assigning as fee Account
-      await getOrCreateAssociatedTokenAccount(
-        provider.connection,
-        centralizedAccount,
-        mintAccount,
-        feeAccount
-      );
-    } catch (err) {
-      throw "Invalid Address Provided";
-    }
+    //   // needs to have ata address (USDC) before assigning as fee Account
+    //   await getOrCreateAssociatedTokenAccount(
+    //     provider.connection,
+    //     mintAccount,
+    //     feeAccount, 
+    //     undefined, undefined, undefined, TOKEN_2022_PROGRAM_ID
+    //   );
+    // } catch (err) {
+    //   throw "Invalid Address Provided";
+    // }
   }
 
   let priorityIx = await getPriorityFeeIx(provider.connection);
@@ -102,9 +102,7 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
       feeAccount,
     })
     .accounts({
-      centralAuthority: centralAuthority,
       centralizedAccount: centralizedAccount.publicKey,
-      systemProgram: anchor.web3.SystemProgram.programId,
       mintAccount: mintAccount,
     })
     .instruction();

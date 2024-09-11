@@ -1,6 +1,6 @@
 use crate::{errors::*, state::*};
 use anchor_lang::prelude::*;
-use anchor_spl::token::Mint;
+use anchor_spl::token_interface::Mint;
 
 #[derive(Accounts)]
 pub struct UpdateConfigPayload<'info> {
@@ -16,7 +16,7 @@ pub struct UpdateConfigPayload<'info> {
 
     pub system_program: Program<'info, System>,
 
-    pub mint_account: Account<'info, Mint>,
+    pub mint_account: InterfaceAccount<'info, Mint>,
 }
 
 #[derive(Debug, Clone, AnchorDeserialize, AnchorSerialize)]
