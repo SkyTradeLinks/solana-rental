@@ -26,6 +26,7 @@ pub struct UpdateConfigData {
     pub auction_house_address: Option<Pubkey>,
     pub multiplier: Option<f64>,
     pub fee_account: Option<Pubkey>,
+    pub mint_address: Option<Pubkey>,
 }
 
 pub fn handle_update_config(
@@ -55,6 +56,12 @@ pub fn handle_update_config(
     match payload.auction_house_address {
         Some(value) => {
             ctx.accounts.central_authority.auction_house_address = value;
+        }
+        None => {}
+    }
+    match payload.mint_address {
+        Some(value) => {
+            ctx.accounts.central_authority.mint_address = value;
         }
         None => {}
     }

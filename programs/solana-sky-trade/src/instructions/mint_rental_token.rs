@@ -103,15 +103,39 @@ pub fn handle_mint_rental_token<'info>(
     mint_metadata_args: Vec<u8>,
     leaves_data: u64,
 ) -> Result<()> {
-    let rfc3339: DateTime<FixedOffset> = DateTime::parse_from_rfc3339(&creation_time).unwrap();
-    DateTime::parse_from_rfc3339(&creation_time).unwrap();
-    let creation_min: u32 = rfc3339.time().minute();
+    let rfc3339  = DateTime::parse_from_rfc3339(&creation_time);
+    match rfc3339 {
+        Ok(rfc3339) => {
+            msg!("rfc3339: {:?}", rfc3339);
+        }
+        Err(e) => {
+            msg!("Error parsing RFC3339 string: {:?}", e);
+            return err!(CustomErrors::InvalidTimeString);
+        }
+    }
+    let creation_second=rfc3339.unwrap().timestamp() as u64;
+    let time_limit=3*30*24*60*60;
+    let current_timestamp=Clock::get().unwrap().unix_timestamp as u64;
+
+    let mint_pubkey=ctx.accounts.mint.key();
+    if mint_pubkey != ctx.accounts.central_authority.mint_address {
+        return err!(CustomErrors::InvalidMint);
+    }
+
+    if creation_second> (time_limit+current_timestamp) {
+        msg!("creation_second {}", creation_second);
+        msg!("current_timestamp {}", current_timestamp);
+        msg!("time_limit {}", time_limit);
+        return err!(CustomErrors::TimeToFarInFuture);
+    }
+
+    let creation_min: u32 = rfc3339.unwrap().time().minute();
     if creation_min != 0 && creation_min != 30 {
         msg!("creation_min {}", creation_min);
         return err!(CustomErrors::InvalidTime);
     }
 
-    let expiration_time: String = rfc3339
+    let expiration_time: String = rfc3339.unwrap()
         .checked_add_signed(Duration::minutes(30))
         .unwrap()
         .format("%Y-%m-%dT%H:%M:%S%.3fZ")
