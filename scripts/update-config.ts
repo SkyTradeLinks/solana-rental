@@ -106,6 +106,7 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
       multiplier: null,
       feeAccount,
       auctionHouseAddress: auctionProgram,
+      mintAddress:mintAccount
     })
     .accountsStrict({
       centralAuthority,

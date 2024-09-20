@@ -36,7 +36,7 @@ import { associatedAddress } from "@coral-xyz/anchor/dist/cjs/utils/token";
 import { SYSTEM_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/native/system";
 
 const landAssetId = new PublicKey(
-  "7gyD7j1seeJAWrh24HvC6fxXWcXGjuseUzsmkooNt99d"
+  "HD6m5GvQRaugE6a4ZAzqL5hB3GqMYLeVvw5CAYktkca4"
 );
 
 describe("solana-sky-trade", () => {
@@ -97,14 +97,14 @@ describe("solana-sky-trade", () => {
 
     umi.use(signerIdentity(callersigner));
 
-    let dateNow = "2024-08-29T21:17:00.831Z"; //'2024-08-26T19:25:12.738Z'
+    let dateNow = new Date("2024-07-25T19:30:12.738Z").toISOString(); //'2024-08-26T19:25:12.738Z'
     console.log({ dateNow });
 
     let [rent_escrow, bump] = anchor.web3.PublicKey.findProgramAddressSync(
       [Buffer.from("escrow"), landAssetId.toBytes(), Buffer.from(dateNow)],
       program.programId
     );
-
+console.log({rent_escrow})
     const rent_escrow_Ata = associatedAddress({
       mint: mintAccount,
       owner: rent_escrow,

@@ -8,7 +8,7 @@ pub use errors::*;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("rentg99tRH7uhh1eZ8Gbfej6LGLBxwuo4jVjL9vvsH2");
+declare_id!("DuxeEbaDrJRSkE1rrAG5RUcM5JxZuoSqTavEbhaqq65J");
 
 #[program]
 pub mod solana_sky_trade {

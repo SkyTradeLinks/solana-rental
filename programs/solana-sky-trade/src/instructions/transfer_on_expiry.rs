@@ -110,7 +110,10 @@ pub fn handle_transfer_on_expiry<'info>(
     leaf_data: LeafData,
 ) -> Result<()> {
     
-
+    let mint_pubkey=ctx.accounts.mint.key();
+    if mint_pubkey != ctx.accounts.central_authority.mint_address {
+        return err!(CustomErrors::InvalidMint);
+    }
     let expiration_time=DateTime::parse_from_rfc3339(&ctx.accounts.rent_escrow.end_time).unwrap();
     let expiration_timestamp=expiration_time.timestamp(); 
     let current_timestamp=Clock::get().unwrap().unix_timestamp; 

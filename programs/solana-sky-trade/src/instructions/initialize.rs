@@ -52,6 +52,7 @@ pub fn handle_initialize(ctx: Context<InitializePayload>) -> Result<()> {
 
     // Fee Account
     data.fee_account = ctx.accounts.fee_account.key();
+    data.mint_address= ctx.accounts.mint_account.key();
 
     Ok(())
 }
