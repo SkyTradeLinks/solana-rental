@@ -61,7 +61,9 @@ describe("solana-sky-trade", () => {
 
   // DiW5MWFjPR3AeVd28ChEhsGb96efhHwst9eYwy8YdWEf
   const centralizedAccount = loadKeyPair(process.env.CENTRALIZED_ACCOUNT);
-
+  //fee account keypair which collects the closed acc rent.
+  const feeAcc=loadKeyPair(process.env.FEE_ACC)
+  
   let authoritySigner = createSignerFromKeypair(umi, {
     secretKey: centralizedAccount.secretKey,
     publicKey: publicKey(centralizedAccount.publicKey),
@@ -97,7 +99,7 @@ describe("solana-sky-trade", () => {
 
     umi.use(signerIdentity(callersigner));
 
-    let dateNow = new Date("2024-07-25T19:30:12.738Z").toISOString(); //'2024-08-26T19:25:12.738Z'
+    let dateNow = new Date("2024-08-26T15:30:12.738Z").toISOString(); //'2024-08-26T19:25:12.738Z'
     console.log({ dateNow });
 
     let [rent_escrow, bump] = anchor.web3.PublicKey.findProgramAddressSync(
@@ -168,7 +170,6 @@ console.log({rent_escrow})
       })
       .accountsStrict({
         centralAuthority,
-        payer: caller.publicKey,
         mint: mintAccount,
         feeAccount,
         feeAccountAta: feeAccountAta.address,
@@ -190,13 +191,14 @@ console.log({rent_escrow})
     let tx = new Transaction();
     tx = tx.add(ix);
 
+    //fee account signs it.
     let sig = await sendAndConfirmTransaction(provider.connection, tx, [
-      caller,
+      feeAcc
     ]).catch((e) => {
       console.log(e);
     });
 
-    console.log("transfer on expiry transaction signature", sig);
+    console.log("transfer on expiry transaction signature", sig);    
   });
 });
 
