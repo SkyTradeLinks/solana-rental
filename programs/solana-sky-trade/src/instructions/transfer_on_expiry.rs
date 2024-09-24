@@ -25,6 +25,8 @@ pub struct TransferOnExpiryAccounts<'info> {
     pub central_authority: Box<Account<'info, Data>>,
 
     /// CHECK: checked at ix
+    #[account(mut,
+    )]
     pub fee_account: UncheckedAccount<'info>,
     #[account(
         mut,
@@ -109,6 +111,11 @@ pub fn handle_transfer_on_expiry<'info>(
     leaf_data: LeafData,
 ) -> Result<()> {
     
+    if ctx.accounts.fee_account.key() != ctx.accounts.central_authority.fee_account {
+        return err!(CustomErrors::InvalidReceiver);
+    }
+
+
     let mint_pubkey=ctx.accounts.mint.key();
     if mint_pubkey != ctx.accounts.central_authority.mint_address {
         return err!(CustomErrors::InvalidMint);
