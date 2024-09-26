@@ -37,4 +37,10 @@ pub enum CustomErrors {
 
     #[msg("Rental token has not expired yet")]
     InvalidTransferTime,
+
+    #[msg("Invalid Received Creators Hash")]
+    InvalidReceivedCreatorHash,
+
+    #[msg("Invalid Received Creator")]
+    InvalidReceivedCreator,
 }

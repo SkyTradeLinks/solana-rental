@@ -4,7 +4,10 @@ use anchor_spl::{
     token::{transfer_checked, Mint, Token, TokenAccount, TransferChecked},
 };
 use chrono::*;
-use mpl_bubblegum::{instructions::MintToCollectionV1CpiBuilder, types::MetadataArgs};
+use mpl_bubblegum::{
+    instructions::MintToCollectionV1CpiBuilder,
+    types::{Creator, MetadataArgs},
+};
 use mpl_token_metadata::ID;
 
 use crate::{state::*, CustomErrors};
@@ -83,6 +86,13 @@ pub struct MintRentalTokenPayload<'info> {
     /// CHECK: This account is checked in the instruction
     pub collection_edition: UncheckedAccount<'info>,
 
+    /// CHECK: This account is checked in the instruction
+    pub royalties_receiver: AccountInfo<'info>,
+    /// CHECK: This account is checked in the instruction
+    pub mint_creator: AccountInfo<'info>,
+    /// CHECK: This account is checked in the instruction
+    pub verification_creator: AccountInfo<'info>,
+
     /// CHECK: used to sign creation
     pub bubblegum_signer: UncheckedAccount<'info>,
 
@@ -95,6 +105,38 @@ pub struct MintRentalTokenPayload<'info> {
     pub token_metadata_program: Program<'info, Metadata>,
 }
 
+impl<'info> MintRentalTokenPayload<'info> {
+    /// Modifies the received metadata with the checked creators
+    pub fn generate_and_check_creators(&self, mint_metadata: &mut MetadataArgs) -> Result<()> {
+        self.central_authority
+            .check_royalties_receiver(self.royalties_receiver.key())?;
+        self.central_authority
+            .check_mint_creator(self.mint_creator.key())?;
+        self.central_authority
+            .check_verification_creator(self.verification_creator.key())?;
+
+        mint_metadata.creators = vec![
+            Creator {
+                address: self.royalties_receiver.key(),
+                verified: true,
+                share: 100,
+            },
+            Creator {
+                address: self.mint_creator.key(),
+                verified: true,
+                share: 0,
+            },
+            Creator {
+                address: self.verification_creator.key(),
+                verified: true,
+                share: 0,
+            },
+        ];
+
+        Ok(())
+    }
+}
+
 pub fn handle_mint_rental_token<'info>(
     ctx: Context<'_, '_, '_, 'info, MintRentalTokenPayload<'info>>,
     land_asset_id: Pubkey,
@@ -103,7 +145,7 @@ pub fn handle_mint_rental_token<'info>(
     mint_metadata_args: Vec<u8>,
     leaves_data: u64,
 ) -> Result<()> {
-    let rfc3339  = DateTime::parse_from_rfc3339(&creation_time);
+    let rfc3339 = DateTime::parse_from_rfc3339(&creation_time);
     match rfc3339 {
         Ok(rfc3339) => {
             msg!("rfc3339: {:?}", rfc3339);
@@ -113,16 +155,16 @@ pub fn handle_mint_rental_token<'info>(
             return err!(CustomErrors::InvalidTimeString);
         }
     }
-    let creation_second=rfc3339.unwrap().timestamp() as u64;
-    let time_limit=3*30*24*60*60;
-    let current_timestamp=Clock::get().unwrap().unix_timestamp as u64;
+    let creation_second = rfc3339.unwrap().timestamp() as u64;
+    let time_limit = 3 * 30 * 24 * 60 * 60;
+    let current_timestamp = Clock::get().unwrap().unix_timestamp as u64;
 
-    let mint_pubkey=ctx.accounts.mint.key();
+    let mint_pubkey = ctx.accounts.mint.key();
     if mint_pubkey != ctx.accounts.central_authority.mint_address {
         return err!(CustomErrors::InvalidMint);
     }
 
-    if creation_second> (time_limit+current_timestamp) {
+    if creation_second > (time_limit + current_timestamp) {
         msg!("creation_second {}", creation_second);
         msg!("current_timestamp {}", current_timestamp);
         msg!("time_limit {}", time_limit);
@@ -135,7 +177,8 @@ pub fn handle_mint_rental_token<'info>(
         return err!(CustomErrors::InvalidTime);
     }
 
-    let expiration_time: String = rfc3339.unwrap()
+    let expiration_time: String = rfc3339
+        .unwrap()
         .checked_add_signed(Duration::minutes(30))
         .unwrap()
         .format("%Y-%m-%dT%H:%M:%S%.3fZ")
@@ -148,7 +191,9 @@ pub fn handle_mint_rental_token<'info>(
     let fee_quota = ctx.accounts.central_authority.admin_quota * (expected_cost as f64);
     let fee_quota = fee_quota as u64;
 
-    let mint_metadata = MetadataArgs::try_from_slice(mint_metadata_args.as_slice())?;
+    let mut mint_metadata = MetadataArgs::try_from_slice(mint_metadata_args.as_slice())?;
+    ctx.accounts
+        .generate_and_check_creators(&mut mint_metadata)?;
 
     ctx.accounts.rent_escrow.land_asset_id = land_asset_id;
     ctx.accounts.rent_escrow.creation_time = creation_time;
