@@ -16,7 +16,6 @@ use crate::errors::*;
 #[derive(Accounts)]
 pub struct TransferOnExpiryAccounts<'info> {
     #[account(mut)]
-    pub payer: Signer<'info>,
     pub mint: Account<'info, Mint>,
 
     #[account(
@@ -26,6 +25,8 @@ pub struct TransferOnExpiryAccounts<'info> {
     pub central_authority: Box<Account<'info, Data>>,
 
     /// CHECK: checked at ix
+    #[account(mut,
+    )]
     pub fee_account: UncheckedAccount<'info>,
     #[account(
         mut,
@@ -51,7 +52,7 @@ pub struct TransferOnExpiryAccounts<'info> {
     payment_receiver_ata: Account<'info, TokenAccount>,
 
     #[account(mut, 
-        close = payer,
+        close = fee_account,
     )]
     rent_escrow: Account<'info, RentEscrow>,
 
@@ -98,7 +99,7 @@ impl<'info> TransferOnExpiryAccounts<'info> {
             self.token_program.to_account_info(),
             CloseAccount {
                 account: self.rent_escrow_ata.to_account_info(),
-                destination: self.payer.to_account_info(),
+                destination: self.fee_account.to_account_info(),
                 authority: self.rent_escrow.to_account_info(),
             },
         )
@@ -110,6 +111,11 @@ pub fn handle_transfer_on_expiry<'info>(
     leaf_data: LeafData,
 ) -> Result<()> {
     
+    if ctx.accounts.fee_account.key() != ctx.accounts.central_authority.fee_account {
+        return err!(CustomErrors::InvalidReceiver);
+    }
+
+
     let mint_pubkey=ctx.accounts.mint.key();
     if mint_pubkey != ctx.accounts.central_authority.mint_address {
         return err!(CustomErrors::InvalidMint);

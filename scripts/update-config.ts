@@ -101,12 +101,12 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
 
   let ix = await program.methods
     .updateConfig({
-      baseCost,
-      adminQuota,
+      baseCost:null,
+      adminQuota:null,
       multiplier: null,
       feeAccount,
-      auctionHouseAddress: auctionProgram,
-      mintAddress:mintAccount
+      auctionHouseAddress: null,
+      mintAddress:null
     })
     .accountsStrict({
       centralAuthority,
