@@ -61,7 +61,7 @@ pub fn handle_initialize(ctx: Context<InitializePayload>) -> Result<()> {
     data.fee_account = ctx.accounts.fee_account.key();
     data.mint_address = ctx.accounts.mint_account.key();
 
-    data.creators = Creators {
+    data.land_creators = Creators {
         royalties_receiver: ctx.accounts.royalties_receiver.key(),
         mint_creator: ctx.accounts.mint_creator.key(),
         verification_creator: ctx.accounts.verification_creator.key(),

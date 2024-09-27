@@ -26,6 +26,7 @@ pub mod solana_sky_trade {
         bump: u8,
         mint_metadata_args: Vec<u8>,
         leaves_data: u64,
+        land_asset_id_leaf_data: LeafData,
     ) -> Result<()> {
         handle_mint_rental_token(
             ctx,
@@ -34,6 +35,7 @@ pub mod solana_sky_trade {
             bump,
             mint_metadata_args,
             leaves_data,
+            land_asset_id_leaf_data,
         )
     }
 

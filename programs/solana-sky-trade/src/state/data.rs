@@ -12,7 +12,7 @@ pub struct Data {
     pub auction_house_address: Pubkey,
     pub fee_account: Pubkey,
     pub mint_address: Pubkey,
-    pub creators: Creators,
+    pub land_creators: Creators,
 }
 
 impl Data {
@@ -20,7 +20,7 @@ impl Data {
 
     pub fn check_royalties_receiver(&self, received_key: Pubkey) -> Result<()> {
         require_keys_eq!(
-            self.creators.royalties_receiver,
+            self.land_creators.royalties_receiver,
             received_key,
             CustomErrors::InvalidReceivedCreator
         );
@@ -28,7 +28,7 @@ impl Data {
     }
     pub fn check_mint_creator(&self, received_key: Pubkey) -> Result<()> {
         require_keys_eq!(
-            self.creators.mint_creator,
+            self.land_creators.mint_creator,
             received_key,
             CustomErrors::InvalidReceivedCreator
         );
@@ -36,7 +36,7 @@ impl Data {
     }
     pub fn check_verification_creator(&self, received_key: Pubkey) -> Result<()> {
         require_keys_eq!(
-            self.creators.verification_creator,
+            self.land_creators.verification_creator,
             received_key,
             CustomErrors::InvalidReceivedCreator
         );
@@ -47,17 +47,17 @@ impl Data {
     pub fn check_received_creator_hash(&self, received_creator_hash: &[u8; 32]) -> Result<()> {
         let creators = vec![
             Creator {
-                address: self.creators.royalties_receiver,
-                verified: true,
+                address: self.land_creators.royalties_receiver,
+                verified: false,
                 share: 100,
             },
             Creator {
-                address: self.creators.mint_creator,
+                address: self.land_creators.mint_creator,
                 verified: true,
                 share: 0,
             },
             Creator {
-                address: self.creators.verification_creator,
+                address: self.land_creators.verification_creator,
                 verified: true,
                 share: 0,
             },

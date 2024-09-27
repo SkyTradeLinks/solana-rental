@@ -5,8 +5,11 @@ use anchor_spl::{
 };
 use chrono::*;
 use mpl_bubblegum::{
-    instructions::MintToCollectionV1CpiBuilder,
-    types::{Creator, MetadataArgs},
+    instructions::{
+        MintToCollectionV1CpiBuilder, VerifyLeafCpi, VerifyLeafCpiAccounts,
+        VerifyLeafInstructionArgs,
+    },
+    types::{LeafSchema, MetadataArgs},
 };
 use mpl_token_metadata::ID;
 
@@ -86,12 +89,11 @@ pub struct MintRentalTokenPayload<'info> {
     /// CHECK: This account is checked in the instruction
     pub collection_edition: UncheckedAccount<'info>,
 
-    /// CHECK: This account is checked in the instruction
-    pub royalties_receiver: AccountInfo<'info>,
-    /// CHECK: This account is checked in the instruction
-    pub mint_creator: AccountInfo<'info>,
-    /// CHECK: This account is checked in the instruction
-    pub verification_creator: AccountInfo<'info>,
+    /// CHECK: checked at ix
+    land_owner: UncheckedAccount<'info>,
+
+    /// CHECK: checked at ix
+    land_delegate: UncheckedAccount<'info>,
 
     /// CHECK: used to sign creation
     pub bubblegum_signer: UncheckedAccount<'info>,
@@ -106,32 +108,38 @@ pub struct MintRentalTokenPayload<'info> {
 }
 
 impl<'info> MintRentalTokenPayload<'info> {
-    /// Modifies the received metadata with the checked creators
-    pub fn generate_and_check_creators(&self, mint_metadata: &mut MetadataArgs) -> Result<()> {
+    /// Checks that the received creators matches the ones stored in the `Data` account
+    ///  and makes a CPI to verify that is also valid data in the merkle_tree
+    pub fn verify_land_asset_id_creators(
+        &self,
+        land_asset_id_leaf_data: LeafData,
+        land_asset_id: Pubkey,
+        proof: Vec<(&AccountInfo<'info>, bool, bool)>,
+    ) -> Result<()> {
         self.central_authority
-            .check_royalties_receiver(self.royalties_receiver.key())?;
-        self.central_authority
-            .check_mint_creator(self.mint_creator.key())?;
-        self.central_authority
-            .check_verification_creator(self.verification_creator.key())?;
+            .check_received_creator_hash(&land_asset_id_leaf_data.creator_hash)?;
 
-        mint_metadata.creators = vec![
-            Creator {
-                address: self.royalties_receiver.key(),
-                verified: true,
-                share: 100,
+        let leaf = LeafSchema::V1 {
+            id: land_asset_id,
+            owner: self.land_owner.key(),
+            delegate: self.land_delegate.key(),
+            nonce: land_asset_id_leaf_data.nonce,
+            data_hash: land_asset_id_leaf_data.hash,
+            creator_hash: land_asset_id_leaf_data.creator_hash,
+        };
+
+        VerifyLeafCpi::new(
+            &self.compression_program.to_account_info(),
+            VerifyLeafCpiAccounts {
+                merkle_tree: &self.land_merkle_tree.to_account_info(),
             },
-            Creator {
-                address: self.mint_creator.key(),
-                verified: true,
-                share: 0,
+            VerifyLeafInstructionArgs {
+                index: land_asset_id_leaf_data.index,
+                root: land_asset_id_leaf_data.root,
+                leaf: leaf.hash(),
             },
-            Creator {
-                address: self.verification_creator.key(),
-                verified: true,
-                share: 0,
-            },
-        ];
+        )
+        .invoke_with_remaining_accounts(&proof)?;
 
         Ok(())
     }
@@ -144,6 +152,7 @@ pub fn handle_mint_rental_token<'info>(
     bump: u8,
     mint_metadata_args: Vec<u8>,
     leaves_data: u64,
+    land_asset_id_leaf_data: LeafData,
 ) -> Result<()> {
     let rfc3339 = DateTime::parse_from_rfc3339(&creation_time);
     match rfc3339 {
@@ -177,6 +186,15 @@ pub fn handle_mint_rental_token<'info>(
         return err!(CustomErrors::InvalidTime);
     }
 
+    // Verify land asset_id creators
+    let proof = ctx
+        .remaining_accounts
+        .iter()
+        .map(|acc| (acc, false, false))
+        .collect();
+    ctx.accounts
+        .verify_land_asset_id_creators(land_asset_id_leaf_data, land_asset_id, proof)?;
+
     let expiration_time: String = rfc3339
         .unwrap()
         .checked_add_signed(Duration::minutes(30))
@@ -191,9 +209,7 @@ pub fn handle_mint_rental_token<'info>(
     let fee_quota = ctx.accounts.central_authority.admin_quota * (expected_cost as f64);
     let fee_quota = fee_quota as u64;
 
-    let mut mint_metadata = MetadataArgs::try_from_slice(mint_metadata_args.as_slice())?;
-    ctx.accounts
-        .generate_and_check_creators(&mut mint_metadata)?;
+    let mint_metadata = MetadataArgs::try_from_slice(mint_metadata_args.as_slice())?;
 
     ctx.accounts.rent_escrow.land_asset_id = land_asset_id;
     ctx.accounts.rent_escrow.creation_time = creation_time;
