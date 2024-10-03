@@ -27,6 +27,9 @@ pub struct UpdateConfigData {
     pub multiplier: Option<f64>,
     pub fee_account: Option<Pubkey>,
     pub mint_address: Option<Pubkey>,
+    pub royalties_receiver: Option<Pubkey>,
+    pub mint_creator: Option<Pubkey>,
+    pub verification_creator: Option<Pubkey>,
 }
 
 pub fn handle_update_config(
@@ -69,6 +72,22 @@ pub fn handle_update_config(
     match payload.fee_account {
         Some(value) => ctx.accounts.central_authority.fee_account = value,
         None => {}
+    }
+
+    if let Some(royalties_receiver) = payload.royalties_receiver {
+        ctx.accounts
+            .central_authority
+            .land_creators
+            .royalties_receiver = royalties_receiver;
+    }
+    if let Some(mint_creator) = payload.mint_creator {
+        ctx.accounts.central_authority.land_creators.mint_creator = mint_creator;
+    }
+    if let Some(verification_creator) = payload.verification_creator {
+        ctx.accounts
+            .central_authority
+            .land_creators
+            .verification_creator = verification_creator;
     }
 
     Ok(())

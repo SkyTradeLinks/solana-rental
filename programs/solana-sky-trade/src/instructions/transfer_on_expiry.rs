@@ -147,6 +147,8 @@ pub fn handle_transfer_on_expiry<'info>(
     };
     
     require_keys_eq!(ctx.accounts.rent_escrow.land_asset_id, asset_id);
+    
+    ctx.accounts.central_authority.check_received_creator_hash(&leaf_data.creator_hash)?;
 
     //This checks land_owner as owner
     VerifyLeafCpi::new(

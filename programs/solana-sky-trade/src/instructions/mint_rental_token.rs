@@ -4,7 +4,13 @@ use anchor_spl::{
     token::{transfer_checked, Mint, Token, TokenAccount, TransferChecked},
 };
 use chrono::*;
-use mpl_bubblegum::{instructions::MintToCollectionV1CpiBuilder, types::MetadataArgs};
+use mpl_bubblegum::{
+    instructions::{
+        MintToCollectionV1CpiBuilder, VerifyLeafCpi, VerifyLeafCpiAccounts,
+        VerifyLeafInstructionArgs,
+    },
+    types::{LeafSchema, MetadataArgs},
+};
 use mpl_token_metadata::ID;
 
 use crate::{state::*, CustomErrors};
@@ -83,6 +89,12 @@ pub struct MintRentalTokenPayload<'info> {
     /// CHECK: This account is checked in the instruction
     pub collection_edition: UncheckedAccount<'info>,
 
+    /// CHECK: checked at ix
+    land_owner: UncheckedAccount<'info>,
+
+    /// CHECK: checked at ix
+    land_delegate: UncheckedAccount<'info>,
+
     /// CHECK: used to sign creation
     pub bubblegum_signer: UncheckedAccount<'info>,
 
@@ -95,6 +107,44 @@ pub struct MintRentalTokenPayload<'info> {
     pub token_metadata_program: Program<'info, Metadata>,
 }
 
+impl<'info> MintRentalTokenPayload<'info> {
+    /// Checks that the received creators matches the ones stored in the `Data` account
+    ///  and makes a CPI to verify that is also valid data in the merkle_tree
+    pub fn verify_land_asset_id_creators(
+        &self,
+        land_asset_id_leaf_data: LeafData,
+        land_asset_id: Pubkey,
+        proof: Vec<(&AccountInfo<'info>, bool, bool)>,
+    ) -> Result<()> {
+        self.central_authority
+            .check_received_creator_hash(&land_asset_id_leaf_data.creator_hash)?;
+
+        let leaf = LeafSchema::V1 {
+            id: land_asset_id,
+            owner: self.land_owner.key(),
+            delegate: self.land_delegate.key(),
+            nonce: land_asset_id_leaf_data.nonce,
+            data_hash: land_asset_id_leaf_data.hash,
+            creator_hash: land_asset_id_leaf_data.creator_hash,
+        };
+
+        VerifyLeafCpi::new(
+            &self.compression_program.to_account_info(),
+            VerifyLeafCpiAccounts {
+                merkle_tree: &self.land_merkle_tree.to_account_info(),
+            },
+            VerifyLeafInstructionArgs {
+                index: land_asset_id_leaf_data.index,
+                root: land_asset_id_leaf_data.root,
+                leaf: leaf.hash(),
+            },
+        )
+        .invoke_with_remaining_accounts(&proof)?;
+
+        Ok(())
+    }
+}
+
 pub fn handle_mint_rental_token<'info>(
     ctx: Context<'_, '_, '_, 'info, MintRentalTokenPayload<'info>>,
     land_asset_id: Pubkey,
@@ -102,8 +152,9 @@ pub fn handle_mint_rental_token<'info>(
     bump: u8,
     mint_metadata_args: Vec<u8>,
     leaves_data: u64,
+    land_asset_id_leaf_data: LeafData,
 ) -> Result<()> {
-    let rfc3339  = DateTime::parse_from_rfc3339(&creation_time);
+    let rfc3339 = DateTime::parse_from_rfc3339(&creation_time);
     match rfc3339 {
         Ok(rfc3339) => {
             msg!("rfc3339: {:?}", rfc3339);
@@ -113,16 +164,16 @@ pub fn handle_mint_rental_token<'info>(
             return err!(CustomErrors::InvalidTimeString);
         }
     }
-    let creation_second=rfc3339.unwrap().timestamp() as u64;
-    let time_limit=3*30*24*60*60;
-    let current_timestamp=Clock::get().unwrap().unix_timestamp as u64;
+    let creation_second = rfc3339.unwrap().timestamp() as u64;
+    let time_limit = 3 * 30 * 24 * 60 * 60;
+    let current_timestamp = Clock::get().unwrap().unix_timestamp as u64;
 
-    let mint_pubkey=ctx.accounts.mint.key();
+    let mint_pubkey = ctx.accounts.mint.key();
     if mint_pubkey != ctx.accounts.central_authority.mint_address {
         return err!(CustomErrors::InvalidMint);
     }
 
-    if creation_second> (time_limit+current_timestamp) {
+    if creation_second > (time_limit + current_timestamp) {
         msg!("creation_second {}", creation_second);
         msg!("current_timestamp {}", current_timestamp);
         msg!("time_limit {}", time_limit);
@@ -135,7 +186,17 @@ pub fn handle_mint_rental_token<'info>(
         return err!(CustomErrors::InvalidTime);
     }
 
-    let expiration_time: String = rfc3339.unwrap()
+    // Verify land asset_id creators
+    let proof = ctx
+        .remaining_accounts
+        .iter()
+        .map(|acc| (acc, false, false))
+        .collect();
+    ctx.accounts
+        .verify_land_asset_id_creators(land_asset_id_leaf_data, land_asset_id, proof)?;
+
+    let expiration_time: String = rfc3339
+        .unwrap()
         .checked_add_signed(Duration::minutes(30))
         .unwrap()
         .format("%Y-%m-%dT%H:%M:%S%.3fZ")

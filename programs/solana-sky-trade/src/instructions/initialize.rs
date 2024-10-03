@@ -25,6 +25,13 @@ pub struct InitializePayload<'info> {
     /// CHECK: This account is checked in the instruction
     pub auction_house_address: AccountInfo<'info>,
 
+    /// CHECK: This account is checked in the instruction
+    pub royalties_receiver: AccountInfo<'info>,
+    /// CHECK: This account is checked in the instruction
+    pub mint_creator: AccountInfo<'info>,
+    /// CHECK: This account is checked in the instruction
+    pub verification_creator: AccountInfo<'info>,
+
     pub system_program: Program<'info, System>,
 
     pub mint_account: Account<'info, Mint>,
@@ -52,7 +59,13 @@ pub fn handle_initialize(ctx: Context<InitializePayload>) -> Result<()> {
 
     // Fee Account
     data.fee_account = ctx.accounts.fee_account.key();
-    data.mint_address= ctx.accounts.mint_account.key();
+    data.mint_address = ctx.accounts.mint_account.key();
+
+    data.land_creators = Creators {
+        royalties_receiver: ctx.accounts.royalties_receiver.key(),
+        mint_creator: ctx.accounts.mint_creator.key(),
+        verification_creator: ctx.accounts.verification_creator.key(),
+    };
 
     Ok(())
 }
