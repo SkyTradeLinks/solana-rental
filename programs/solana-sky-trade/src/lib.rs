@@ -8,7 +8,7 @@ pub use errors::*;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("HuPBZP1mZ4yefELe7HycKSsVFAwNbKQQSRfxJbLg5jcn");
+declare_id!("Cdq32YN4co43xn3P6hWdExWmRXDrUFQ2udywAww2spud");
 
 #[program]
 pub mod solana_sky_trade {
@@ -25,7 +25,6 @@ pub mod solana_sky_trade {
         creation_time: String,
         bump: u8,
         mint_metadata_args: Vec<u8>,
-        leaves_data: u64,
         land_asset_id_leaf_data: LeafData,
     ) -> Result<()> {
         handle_mint_rental_token(
@@ -34,7 +33,6 @@ pub mod solana_sky_trade {
             creation_time,
             bump,
             mint_metadata_args,
-            leaves_data,
             land_asset_id_leaf_data,
         )
     }

@@ -2,7 +2,7 @@ import { getAssetWithProof } from "@metaplex-foundation/mpl-bubblegum";
 import { publicKey, Umi } from "@metaplex-foundation/umi";
 import { ConcurrentMerkleTreeAccount } from "@solana/spl-account-compression";
 import { Connection, PublicKey } from "@solana/web3.js";
-
+import * as anchor from "@coral-xyz/anchor";
 export const getAssetDataAndProof = async (
   landAssetId: PublicKey,
   umi: Umi,
