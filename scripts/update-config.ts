@@ -106,7 +106,11 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
       multiplier: null,
       feeAccount,
       auctionHouseAddress: null,
-      mintAddress:null
+      mintAddress: null,
+      centralizedAccount: null, 
+      mintCreator: null, 
+      verificationCreator: null, 
+      royaltiesReceiver: null,
     })
     .accountsStrict({
       centralAuthority,

@@ -43,13 +43,12 @@ import {
   // for creation of a billion cnfts
   // refer to https://developers.metaplex.com/bubblegum/create-trees
   // should cost an estimated 4.0291818 SOL x2 (as there are two merkle trees, bring total to just over 8 SOL)
-  let merkleTreeBufferSize = parseInt(process.env.MERKLE_TREE_BUFFER_SIZE);
-  let merkleTreeDepth = parseInt(process.env.MERKLE_TREE_DEPTH);
-  let merkleTreeCanopyDepth = parseInt(process.env.MERKLE_TREE_CANOPY_DEPTH);
 
   // input private key here
   let centralizedAccount = loadKeyPair(process.env.CENTRALIZED_ACCOUNT);
   let auctionProgram = new PublicKey(process.env.AH_PROGRAM_ADDRESS);
+  let landProgram = new PublicKey(process.env.LAND_PROGRAM_ADDRESS);
+  let royaltiesReceiver = new PublicKey(process.env.ROYALTIES_CREATOR);
 
   const wallet = new anchor.Wallet(centralizedAccount);
 
@@ -224,6 +223,16 @@ import {
   try {
     let priorityIx = await getPriorityFeeIx(provider.connection);
 
+    const verificationCreator = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("central_authority")],
+      landProgram
+    )[0];
+    const mintCreator = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("central_authority")],
+      landProgram
+    )[0];
+
+
     let ix = await program.methods
       .initialize()
       .accountsStrict({
@@ -233,6 +242,9 @@ import {
         systemProgram: anchor.web3.SystemProgram.programId,
         auctionHouseAddress: auctionProgram,
         feeAccount: feeAta.address,
+        mintCreator, 
+        verificationCreator, 
+        royaltiesReceiver,
       })
       .instruction();
 

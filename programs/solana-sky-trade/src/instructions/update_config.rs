@@ -27,6 +27,7 @@ pub struct UpdateConfigData {
     pub multiplier: Option<f64>,
     pub fee_account: Option<Pubkey>,
     pub mint_address: Option<Pubkey>,
+    pub centralized_account: Option<Pubkey>,
     pub royalties_receiver: Option<Pubkey>,
     pub mint_creator: Option<Pubkey>,
     pub verification_creator: Option<Pubkey>,
@@ -65,6 +66,13 @@ pub fn handle_update_config(
     match payload.mint_address {
         Some(value) => {
             ctx.accounts.central_authority.mint_address = value;
+        }
+        None => {}
+    }
+
+    match payload.centralized_account {
+        Some(value) => {
+            ctx.accounts.central_authority.centralized_account = value;
         }
         None => {}
     }
