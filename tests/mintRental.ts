@@ -172,7 +172,7 @@ describe("solana-sky-trade", () => {
 
     umi.use(signerIdentity(callersigner));
 
-    let dateNow = new Date("2024-08-29T15:30:12.738Z").toISOString(); //'2024-08-26T19:25:12.738Z'
+    let dateNow = new Date("2024-08-30T15:30:12.738Z").toISOString(); //'2024-08-26T19:25:12.738Z'
     console.log({ dateNow });
     
     let [rent_escrow, bump] = anchor.web3.PublicKey.findProgramAddressSync(
@@ -188,50 +188,13 @@ describe("solana-sky-trade", () => {
     // let leavesDataLength = new anchor.BN(leavesData.length);
     let leavesDataLength = new anchor.BN(1);
 
-    let test1 = program.methods
-      .mintRentalToken(
-        landAssetId,
-        dateNow,
-        bump,
-        Buffer.from(metadataBuffer),
-        leavesDataLength,
-        landAssetLeafData
-      )
-      .accountsStrict({
-        centralAuthority: centralAuthority,
-        centralizedAccount: centralizedAccount.publicKey,
-        mint: mintAccount, //alt
-        caller: caller.publicKey,
-        callerAta: callerAta,
-        rentalMerkleTree: rentalMerkleTree.publicKey,
-        treeConfig: treeConfig,
-        landMerkleTree: landMerkleTree.publicKey,
-        collectionMint: rentalCollection.publicKey.toString(),
-        collectionEdition,
-        collectionMetadata,
-        bubblegumSigner, //alts
-        bubblegumProgram: MPL_BUBBLEGUM_PROGRAM_ID, //alt
-        logWrapper: SPL_NOOP_PROGRAM_ID, //alt
-        compressionProgram: SPL_ACCOUNT_COMPRESSION_PROGRAM_ID, //alt
-        systemProgram: anchor.web3.SystemProgram.programId, //alt
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID, //alt
-        tokenProgram: TOKEN_PROGRAM_ID, //alt
-        tokenMetadataProgram: MPL_TOKEN_METADATA_PROGRAM_ID, //alt
-        rentEscrow: rent_escrow,
-        rentEscrowAta: rent_escrow_Ata,
-        landOwner: "",
-        landDelegate: "",
-      });
-    // .remainingAccounts(landAssetProof)
 
-    console.log(test1);
     let ix = await program.methods
       .mintRentalToken(
         landAssetId,
         dateNow,
         bump,
         Buffer.from(metadataBuffer),
-        leavesDataLength,
         landAssetLeafData
       )
       .accountsStrict({
@@ -404,7 +367,6 @@ describe("solana-sky-trade", () => {
         dateNow,
         bump,
         Buffer.from(metadataBuffer),
-        leavesDataLength,
         landAssetLeafData
       )
       .accountsStrict({
@@ -554,7 +516,6 @@ describe("solana-sky-trade", () => {
         dateNow,
         bump,
         Buffer.from(metadataBuffer),
-        leavesDataLength,
         landAssetLeafData
       )
       .accountsStrict({
@@ -700,7 +661,6 @@ describe("solana-sky-trade", () => {
         dateNow,
         bump,
         Buffer.from(metadataBuffer),
-        leavesDataLength,
         landAssetLeafData
       )
       .accountsStrict({

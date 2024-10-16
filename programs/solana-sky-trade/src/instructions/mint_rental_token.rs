@@ -151,7 +151,6 @@ pub fn handle_mint_rental_token<'info>(
     creation_time: String,
     bump: u8,
     mint_metadata_args: Vec<u8>,
-    leaves_data: u64,
     land_asset_id_leaf_data: LeafData,
 ) -> Result<()> {
     let rfc3339 = DateTime::parse_from_rfc3339(&creation_time);
@@ -202,7 +201,7 @@ pub fn handle_mint_rental_token<'info>(
         .format("%Y-%m-%dT%H:%M:%S%.3fZ")
         .to_string();
 
-    let expected_cost = ctx.accounts.central_authority.base_cost * leaves_data as u64;
+    let expected_cost = ctx.accounts.central_authority.base_cost  as u64;
 
     let decimals = ctx.accounts.mint.decimals;
 
