@@ -1,6 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import { getPriorityFeeIx, loadKeyPair, validateTxExecution } from "../helper";
-import { Connection } from "@solana/web3.js";
+import { Connection, PublicKey } from "@solana/web3.js";
 import { SolanaSkyTrade } from "../target/types/solana_sky_trade";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { mplBubblegum } from "@metaplex-foundation/mpl-bubblegum";
@@ -99,17 +99,28 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
 
   let priorityIx = await getPriorityFeeIx(provider.connection);
 
+  let landProgram = new PublicKey(process.env.LAND_PROGRAM_ADDRESS);
+
+  const verificationCreator = anchor.web3.PublicKey.findProgramAddressSync(
+    [Buffer.from("verification_creator")],
+    landProgram
+  )[0];
+  const mintCreator = anchor.web3.PublicKey.findProgramAddressSync(
+    [Buffer.from("mint_creator")],
+    landProgram
+  )[0];
+
   let ix = await program.methods
     .updateConfig({
       baseCost:null,
       adminQuota:null,
       multiplier: null,
-      feeAccount,
+      feeAccount: null,
       auctionHouseAddress: null,
       mintAddress: null,
       centralizedAccount: null, 
-      mintCreator: null, 
-      verificationCreator: null, 
+      mintCreator, 
+      verificationCreator, 
       royaltiesReceiver: null,
     })
     .accountsStrict({

@@ -224,11 +224,11 @@ import {
     let priorityIx = await getPriorityFeeIx(provider.connection);
 
     const verificationCreator = anchor.web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("central_authority")],
+      [Buffer.from("verification_creator")],
       landProgram
     )[0];
     const mintCreator = anchor.web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("central_authority")],
+      [Buffer.from("mint_creator")],
       landProgram
     )[0];
 
