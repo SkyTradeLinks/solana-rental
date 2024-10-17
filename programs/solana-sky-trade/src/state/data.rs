@@ -16,7 +16,7 @@ pub struct Data {
 }
 
 impl Data {
-    pub const MAX_SIZE: usize = 8 + 1 + 32 + 8 + 8 + 32 + 32 + 32;
+    pub const MAX_SIZE: usize = 8 + 1 + 32 + 8 + 8 + 32 + 32 + 32 + 32 + 32 + 32;
 
     pub fn check_royalties_receiver(&self, received_key: Pubkey) -> Result<()> {
         require_keys_eq!(
