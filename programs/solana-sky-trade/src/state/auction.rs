@@ -5,7 +5,6 @@ use anchor_lang::prelude::*;
 pub struct Auction {
     pub bump: [u8; 1],
     pub nonce_bytes: [u8; 8],
-    pub sale_type: u8,
     pub asset_id: Pubkey,
     pub merkle_tree: Pubkey,
     pub initial_price: u64,
@@ -20,4 +19,8 @@ pub struct Auction {
     pub payment_currency: Pubkey,
     pub bidder: Option<Pubkey>,
     pub current_price: u64,
+    pub filled_amount: u64,
+    pub top_up_bid_deadline: i64,
+    pub asset_verification_deadline: i64,
+    pub is_verified: bool,
 }
